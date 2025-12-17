@@ -1,0 +1,8 @@
+.env
+*.env
+**/serviceAccountKey.json
+node_modules/
+venv/
+__pycache__/
+generated_reports/
+
