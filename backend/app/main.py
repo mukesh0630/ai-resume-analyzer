@@ -12,7 +12,6 @@ from backend.app.routes import (
     skill_gap,
     feedback,
     ai,
-    firebase_test,
     protected,
     history
 )
