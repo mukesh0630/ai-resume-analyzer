@@ -1,5 +1,5 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
-from app.services.resume_parser import extract_text_from_pdf, extract_text_from_docx
+from backend.app.services.resume_parser import extract_text_from_pdf, extract_text_from_docx
 
 router = APIRouter(prefix="/resume", tags=["Resume"])
 

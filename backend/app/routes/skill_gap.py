@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
-from app.services.skill_gap import detect_skill_gap
+from backend.app.services.skill_gap import detect_skill_gap
 
 router = APIRouter(prefix="/skills", tags=["Skill Gap"])
 

@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
-from app.services.section_feedback import analyze_resume_sections
+from backend.app.services.section_feedback import analyze_resume_sections
 
 router = APIRouter(prefix="/feedback", tags=["Feedback"])
 

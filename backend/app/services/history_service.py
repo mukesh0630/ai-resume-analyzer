@@ -1,5 +1,5 @@
 from datetime import datetime
-from app.firebase_config import db
+from backend.app.firebase_config import db
 
 
 def save_analysis_history(user_id: str, data: dict):

@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
-from app.services.similarity import calculate_similarity
+from backend.app.services.similarity import calculate_similarity
 
 router = APIRouter(prefix="/similarity", tags=["Similarity"])
 

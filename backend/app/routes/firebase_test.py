@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.firebase_config import db
+from backend.app.firebase_config import db
 
 router = APIRouter(prefix="/firebase", tags=["Firebase Test"])
 

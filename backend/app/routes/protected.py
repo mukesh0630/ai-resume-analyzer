@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from app.utils.auth import verify_firebase_token
+from backend.app.utils.auth import verify_firebase_token
 
 router = APIRouter(prefix="/protected", tags=["Protected"])
 

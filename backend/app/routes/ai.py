@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import List
-from app.services.ai_suggestions import generate_ai_suggestions, generate_learning_roadmap
+from backend.app.services.ai_suggestions import generate_ai_suggestions, generate_learning_roadmap
 
 router = APIRouter(prefix="/ai", tags=["AI Suggestions"])
 
