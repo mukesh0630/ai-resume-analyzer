@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
 
 from fastapi import FastAPI
-from app.routes import (
+from backend.app.routes import (
     resume,
     ats,
     similarity,
