@@ -6,4 +6,5 @@ reportlab
 firebase-admin
 PyPDF2
 docx
+exceptions
 
