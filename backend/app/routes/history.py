@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from app.utils.auth import verify_firebase_token
+from backend.app.utils.auth import verify_firebase_token
 from backend.app.services.history_service import get_user_history
 
 router = APIRouter(prefix="/history", tags=["History"])
