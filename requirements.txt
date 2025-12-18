@@ -5,4 +5,5 @@ groq
 reportlab
 firebase-admin
 PyPDF2
+docx
 
