@@ -60,7 +60,6 @@ app.include_router(similarity.router)
 app.include_router(skill_gap.router)
 app.include_router(feedback.router)
 app.include_router(ai.router)
-app.include_router(firebase_test.router)
 app.include_router(protected.router)
 app.include_router(history.router)
 
