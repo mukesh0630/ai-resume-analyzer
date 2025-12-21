@@ -1,114 +1,67 @@
 import { useState } from "react";
+import Login from "./components/Login";
+import ResumeUploader from "./components/ResumeUploader";
+import History from "./components/History";
 
-/* Components */
-import Login from "./components/Login.jsx";
-import ResumeUploader from "./components/ResumeUploader.jsx";
-import ATSScoreRing from "./components/ATSScoreRing.jsx";
-import SkillGapChart from "./components/SkillGapChart.jsx";
-import History from "./components/History.jsx";
-
-/* ===============================
-   MAIN APP
-================================ */
 export default function App() {
-  // fake auth state (will connect Firebase later)
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(true);
+  const [page, setPage] = useState("dashboard");
 
-  if (!isLoggedIn) {
-    return <LoginWrapper onLogin={() => setIsLoggedIn(true)} />;
-  }
+  if (!isLoggedIn) return <Login />;
 
-  return <Dashboard />;
-}
-
-/* ===============================
-   LOGIN WRAPPER
-================================ */
-function LoginWrapper({ onLogin }) {
   return (
-    <div onClick={onLogin}>
-      <Login />
-    </div>
-  );
-}
-
-/* ===============================
-   DASHBOARD
-================================ */
-function Dashboard() {
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white flex">
-
-      {/* Sidebar */}
-      <aside className="w-64 bg-black/30 backdrop-blur-xl border-r border-white/10 p-6 hidden md:block">
-        <h2 className="text-2xl font-bold text-blue-400 mb-8">
-          ResumeAI
-        </h2>
-
-        <nav className="space-y-4 text-gray-300">
-          <div className="hover:text-white cursor-pointer">Dashboard</div>
-          <div className="hover:text-white cursor-pointer">Analyze Resume</div>
-          <div className="hover:text-white cursor-pointer">History</div>
-          <div className="hover:text-white cursor-pointer">Profile</div>
-        </nav>
-      </aside>
-
-      {/* Main Content */}
+    <div className="min-h-screen flex bg-gradient-to-br from-gray-900 to-black text-white">
+      <Sidebar setPage={setPage} page={page} />
       <main className="flex-1 p-8 overflow-y-auto">
-
-        <h1 className="text-4xl font-bold mb-8">
-          AI Resume Intelligence Dashboard
-        </h1>
-
-        {/* Resume Upload */}
-        <div className="mb-10">
-          <ResumeUploader />
-        </div>
-
-        {/* Stats Section */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-
-          <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/10 flex justify-center">
-            <ATSScoreRing score={82} />
-          </div>
-
-          <StatCard title="Skill Match" value="74%" />
-          <StatCard title="Similarity" value="68%" />
-
-        </div>
-
-        {/* Skill Gap Chart */}
-        <div className="mb-10">
-          <SkillGapChart />
-        </div>
-        <div className="mt-10">
-          <History />
-        </div>
-
-        {/* Smart Insights */}
-        <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
-          <h2 className="text-2xl font-semibold mb-4">
-            Smart Insights
-          </h2>
-          <p className="text-gray-300">
-            Your resume performs well, but adding Docker and AWS
-            can significantly improve shortlisting chances.
-          </p>
-        </div>
-
+        {page === "dashboard" && <Dashboard />}
+        {page === "analyze" && <ResumeUploader />}
+        {page === "history" && <History />}
+        {page === "profile" && <Profile />}
       </main>
     </div>
   );
 }
 
-/* ===============================
-   STAT CARD
-================================ */
-function StatCard({ title, value }) {
-  return (
-    <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 border-white/10">
-      <p className="text-gray-400 text-sm mb-2">{title}</p>
-      <h3 className="text-3xl font-bold text-white">{value}</h3>
+function Sidebar({ setPage, page }) {
+  const item = (id, label) => (
+    <div
+      onClick={() => setPage(id)}
+      className={`cursor-pointer p-2 rounded-lg ${
+        page === id ? "bg-blue-500/20 text-blue-400" : "text-gray-300"
+      }`}
+    >
+      {label}
     </div>
+  );
+
+  return (
+    <aside className="w-64 p-6 bg-black/40 border-r border-white/10">
+      <h1 className="text-2xl font-bold text-blue-400 mb-6">ResumeAI</h1>
+      {item("dashboard", "Dashboard")}
+      {item("analyze", "Analyze Resume")}
+      {item("history", "History")}
+      {item("profile", "Profile")}
+    </aside>
+  );
+}
+
+function Dashboard() {
+  return (
+    <>
+      <h1 className="text-4xl font-bold mb-4">AI Resume Analyzer</h1>
+      <p className="text-gray-300 max-w-2xl">
+        Upload your resume, compare it with job descriptions, improve ATS score,
+        discover missing skills, and follow AI-guided learning roadmaps.
+      </p>
+    </>
+  );
+}
+
+function Profile() {
+  return (
+    <>
+      <h1 className="text-3xl font-bold mb-4">Profile</h1>
+      <p className="text-gray-300">User analytics & settings coming soon.</p>
+    </>
   );
 }

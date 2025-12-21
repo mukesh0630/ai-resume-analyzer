@@ -1,14 +1,18 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
-from backend.app.services.section_feedback import analyze_resume_sections
+from typing import List
+from backend.app.services.feedback import generate_feedback
 
 router = APIRouter(prefix="/feedback", tags=["Feedback"])
 
-
 class FeedbackRequest(BaseModel):
-    resume_text: str
+    ats_score: float
+    missing_skills: List[str]
 
-
-@router.post("/sections")
-def section_feedback(data: FeedbackRequest):
-    return analyze_resume_sections(data.resume_text)
+@router.post("")
+def feedback(data: FeedbackRequest):
+    return {
+        "feedback": generate_feedback(
+            data.ats_score, data.missing_skills
+        )
+    }

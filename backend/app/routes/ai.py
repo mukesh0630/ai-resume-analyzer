@@ -1,18 +1,20 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
-from typing import List
-from backend.app.services.ai_suggestions import generate_ai_suggestions, generate_learning_roadmap
+from backend.app.services.ai_gemini import ai_suggestions
 
-router = APIRouter(prefix="/ai", tags=["AI Suggestions"])
+router = APIRouter(prefix="/ai", tags=["AI"])
 
+class AIReq(BaseModel):
+    resume_text: str
+    job_description: str
+    missing_skills: list[str]
 
-class AIRequest(BaseModel):
-    missing_skills: List[str]
-
-
-@router.post("/suggestions")
-def ai_suggestions(data: AIRequest):
+@router.post("/assistant")
+def assistant(data: AIReq):
     return {
-        "resume_suggestions": generate_ai_suggestions(data.missing_skills),
-        "learning_roadmap": generate_learning_roadmap(data.missing_skills)
+        "response": ai_suggestions(
+            data.resume_text,
+            data.job_description,
+            data.missing_skills
+        )
     }

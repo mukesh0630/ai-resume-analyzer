@@ -1,5 +1,13 @@
+// ===============================
+// API BASE URL (Render Backend)
+// ===============================
+const BASE_URL = "https://ai-resume-analyzer-0bi6.onrender.com";
+
+// ===============================
+// ATS SCORE
+// ===============================
 export async function getATSScore(resumeText, jobDescription) {
-  const response = await fetch("http://127.0.0.1:8000/ats/score", {
+  const response = await fetch(`${BASE_URL}/ats/score`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -14,10 +22,14 @@ export async function getATSScore(resumeText, jobDescription) {
     throw new Error("Failed to fetch ATS score");
   }
 
-  return response.json();
+  return response.json(); // { ats_score: number }
 }
+
+// ===============================
+// SKILL GAP
+// ===============================
 export async function getSkillGap(resumeText, jobDescription) {
-  const response = await fetch("http://127.0.0.1:8000/ats/skills", {
+  const response = await fetch(`${BASE_URL}/ats/skills`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -32,10 +44,15 @@ export async function getSkillGap(resumeText, jobDescription) {
     throw new Error("Failed to fetch skill gap");
   }
 
-  return response.json();
+  return response.json(); 
+  // { matched_skills: [], missing_skills: [] }
 }
+
+// ===============================
+// LEARNING ROADMAP (AI / RULE)
+// ===============================
 export async function getLearningRoadmap(missingSkills) {
-  const response = await fetch("http://127.0.0.1:8000/ats/roadmap", {
+  const response = await fetch(`${BASE_URL}/ats/roadmap`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -49,11 +66,15 @@ export async function getLearningRoadmap(missingSkills) {
     throw new Error("Failed to fetch learning roadmap");
   }
 
-  return response.json();
+  return response.json(); 
+  // { learning_roadmap: [] }
 }
 
+// ===============================
+// AI ASSISTANT (SHORT INSIGHTS)
+// ===============================
 export async function askResumeAI(resumeText, jobDescription, missingSkills) {
-  const response = await fetch("http://127.0.0.1:8000/ai/assistant", {
+  const response = await fetch(`${BASE_URL}/ai/assistant`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -69,12 +90,19 @@ export async function askResumeAI(resumeText, jobDescription, missingSkills) {
     throw new Error("AI assistant failed");
   }
 
-  return response.json();
+  return response.json(); 
+  // { ai_response: string (5–7 bullet points) }
 }
+
+// ===============================
+// PDF REPORT DOWNLOAD
+// ===============================
 export async function downloadPDFReport(payload) {
-  const response = await fetch("http://127.0.0.1:8000/report/pdf", {
+  const response = await fetch(`${BASE_URL}/report/pdf`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify(payload),
   });
 
@@ -82,23 +110,41 @@ export async function downloadPDFReport(payload) {
     throw new Error("Failed to generate PDF");
   }
 
-  const blob = await response.blob();
-  return blob;
+  return await response.blob();
 }
+
+// ===============================
+// SAVE ANALYSIS HISTORY
+// ===============================
 export async function saveHistory(userId, payload) {
-  await fetch("http://127.0.0.1:8000/history/save", {
+  const response = await fetch(`${BASE_URL}/history/save`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify({
       user_id: userId,
       ...payload,
     }),
   });
+
+  if (!response.ok) {
+    throw new Error("Failed to save history");
+  }
 }
 
+// ===============================
+// FETCH HISTORY
+// ===============================
 export async function fetchHistory(userId) {
-  const res = await fetch(`http://127.0.0.1:8000/history/${userId}`);
-  return res.json();
+  const response = await fetch(`${BASE_URL}/history/${userId}`);
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch history");
+  }
+
+  return response.json(); 
+  // { history: [] }
 }
 
 

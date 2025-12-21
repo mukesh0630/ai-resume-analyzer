@@ -1,7 +1,6 @@
 from PyPDF2 import PdfReader
 from docx import Document
 
-
 def extract_text_from_pdf(file):
     reader = PdfReader(file)
     text = ""
@@ -9,10 +8,6 @@ def extract_text_from_pdf(file):
         text += page.extract_text() or ""
     return text
 
-
 def extract_text_from_docx(file):
     doc = Document(file)
-    text = ""
-    for para in doc.paragraphs:
-        text += para.text + "\n"
-    return text
+    return "\n".join([p.text for p in doc.paragraphs])

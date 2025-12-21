@@ -1,10 +1,18 @@
-from fastapi import APIRouter, Depends
-from backend.app.utils.auth import verify_firebase_token
-from backend.app.services.history_service import get_user_history
+from fastapi import APIRouter
+from pydantic import BaseModel
+from typing import List
+from backend.app.services.feedback import generate_feedback
 
-router = APIRouter(prefix="/history", tags=["History"])
+router = APIRouter(prefix="/feedback", tags=["Feedback"])
 
+class FeedbackRequest(BaseModel):
+    ats_score: float
+    missing_skills: List[str]
 
-@router.get("/")
-def fetch_history(user=Depends(verify_firebase_token)):
-    return get_user_history(user["uid"])
+@router.post("")
+def feedback(data: FeedbackRequest):
+    return {
+        "feedback": generate_feedback(
+            data.ats_score, data.missing_skills
+        )
+    }
