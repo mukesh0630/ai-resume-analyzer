@@ -1,19 +1,45 @@
 import { useState } from "react";
+
+/* Pages */
 import Login from "./components/Login";
 import ResumeUploader from "./components/ResumeUploader";
 import History from "./components/History";
 
+/* UI Components */
+import ATSScoreRing from "./components/ATSScoreRing";
+import SkillGapChart from "./components/SkillGapChart";
+
+/* ===============================
+   MAIN APP
+================================ */
 export default function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(true); // demo true
   const [page, setPage] = useState("dashboard");
 
-  if (!isLoggedIn) return <Login />;
+  if (!isLoggedIn) {
+    return <Login />;
+  }
 
   return (
-    <div className="min-h-screen flex bg-gradient-to-br from-gray-900 to-black text-white">
-      <Sidebar setPage={setPage} page={page} />
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white flex">
+      
+      {/* SIDEBAR */}
+      <aside className="w-64 bg-black/40 backdrop-blur-xl border-r border-white/10 p-6 hidden md:block">
+        <h2 className="text-2xl font-bold text-purple-400 mb-8">
+          ResumeAI
+        </h2>
+
+        <nav className="space-y-4 text-gray-300">
+          <SidebarItem label="Dashboard" onClick={() => setPage("dashboard")} />
+          <SidebarItem label="Analyze Resume" onClick={() => setPage("analyze")} />
+          <SidebarItem label="History" onClick={() => setPage("history")} />
+          <SidebarItem label="Profile" onClick={() => setPage("profile")} />
+        </nav>
+      </aside>
+
+      {/* MAIN CONTENT */}
       <main className="flex-1 p-8 overflow-y-auto">
-        {page === "dashboard" && <Dashboard />}
+        {page === "dashboard" && <DashboardHome />}
         {page === "analyze" && <ResumeUploader />}
         {page === "history" && <History />}
         {page === "profile" && <Profile />}
@@ -22,46 +48,99 @@ export default function App() {
   );
 }
 
-function Sidebar({ setPage, page }) {
-  const item = (id, label) => (
-    <div
-      onClick={() => setPage(id)}
-      className={`cursor-pointer p-2 rounded-lg ${
-        page === id ? "bg-blue-500/20 text-blue-400" : "text-gray-300"
-      }`}
-    >
-      {label}
+/* ===============================
+   DASHBOARD HOME
+================================ */
+function DashboardHome() {
+  return (
+    <>
+      {/* INTRO */}
+      <div className="bg-gradient-to-r from-purple-600/20 to-blue-600/20 
+                      border border-white/10 rounded-3xl p-8 mb-10">
+        <h1 className="text-4xl font-bold mb-4">
+          AI Resume Intelligence Dashboard
+        </h1>
+
+        <p className="text-gray-300 max-w-3xl">
+          Upload your resume, compare it with job descriptions, and instantly
+          see how well it performs against modern ATS systems.
+          Get AI-powered insights and personalized learning roadmaps.
+        </p>
+
+        <ul className="mt-6 space-y-2 text-gray-300">
+          <li>✔ ATS Score with animation</li>
+          <li>✔ Skill gap & similarity analysis</li>
+          <li>✔ AI-powered career guidance</li>
+          <li>✔ Resume history tracking</li>
+        </ul>
+      </div>
+
+      {/* STATS */}
+      <div className="grid md:grid-cols-3 gap-6 mb-10">
+        <Card>
+          <ATSScoreRing score={82} />
+        </Card>
+        <StatCard title="Skill Match" value="74%" />
+        <StatCard title="Similarity" value="68%" />
+      </div>
+
+      {/* CHART */}
+      <SkillGapChart />
+    </>
+  );
+}
+
+/* ===============================
+   PROFILE
+================================ */
+function Profile() {
+  const avgATS = 68;
+  const level =
+    avgATS < 40 ? "Beginner" :
+    avgATS < 65 ? "Intermediate" :
+    avgATS < 80 ? "Advanced" : "Pro";
+
+  return (
+    <div className="bg-white/10 backdrop-blur-xl border border-white/10 rounded-3xl p-8">
+      <h2 className="text-3xl font-bold mb-4">Profile</h2>
+
+      <p className="text-gray-300 mb-2">User Level</p>
+      <h3 className="text-2xl font-semibold text-purple-400">{level}</h3>
+
+      <p className="mt-4 text-gray-400">
+        Improve your ATS score to level up and unlock better insights.
+      </p>
     </div>
   );
+}
 
+/* ===============================
+   REUSABLE UI
+================================ */
+function SidebarItem({ label, onClick }) {
   return (
-    <aside className="w-64 p-6 bg-black/40 border-r border-white/10">
-      <h1 className="text-2xl font-bold text-blue-400 mb-6">ResumeAI</h1>
-      {item("dashboard", "Dashboard")}
-      {item("analyze", "Analyze Resume")}
-      {item("history", "History")}
-      {item("profile", "Profile")}
-    </aside>
+    <button
+      onClick={onClick}
+      className="block w-full text-left hover:text-white transition"
+    >
+      {label}
+    </button>
   );
 }
 
-function Dashboard() {
+function StatCard({ title, value }) {
   return (
-    <>
-      <h1 className="text-4xl font-bold mb-4">AI Resume Analyzer</h1>
-      <p className="text-gray-300 max-w-2xl">
-        Upload your resume, compare it with job descriptions, improve ATS score,
-        discover missing skills, and follow AI-guided learning roadmaps.
-      </p>
-    </>
+    <Card>
+      <p className="text-gray-400 text-sm mb-2">{title}</p>
+      <h3 className="text-3xl font-bold">{value}</h3>
+    </Card>
   );
 }
 
-function Profile() {
+function Card({ children }) {
   return (
-    <>
-      <h1 className="text-3xl font-bold mb-4">Profile</h1>
-      <p className="text-gray-300">User analytics & settings coming soon.</p>
-    </>
+    <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/10 flex justify-center items-center">
+      {children}
+    </div>
   );
 }

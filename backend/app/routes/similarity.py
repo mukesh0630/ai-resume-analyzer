@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
-from backend.app.services.similarity import calculate_similarity
+from backend.app.services.similarity import similarity_score
 
 router = APIRouter(prefix="/similarity", tags=["Similarity"])
 
@@ -11,7 +11,7 @@ class SimilarityRequest(BaseModel):
 @router.post("")
 def similarity(data: SimilarityRequest):
     return {
-        "similarity_score": calculate_similarity(
+        "similarity_score": similarity_score(
             data.resume_text, data.job_description
         )
     }

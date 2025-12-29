@@ -10,5 +10,8 @@ class ATSRequest(BaseModel):
 
 @router.post("/score")
 def ats_score(data: ATSRequest):
-    score = calculate_ats_score(data.resume_text, data.job_description)
+    score = calculate_ats_score(
+        data.resume_text,
+        data.job_description
+    )
     return {"ats_score": score}

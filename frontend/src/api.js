@@ -70,29 +70,54 @@ export async function getLearningRoadmap(missingSkills) {
   // { learning_roadmap: [] }
 }
 
+export async function getFeedback(atsScore, missingSkills) {
+  const res = await fetch(
+    "https://ai-resume-analyzer-0bi6.onrender.com/feedback",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ats_score: atsScore,
+        missing_skills: missingSkills
+      })
+    }
+  );
+
+  return res.json();
+}
+
 // ===============================
 // AI ASSISTANT (SHORT INSIGHTS)
 // ===============================
-export async function askResumeAI(resumeText, jobDescription, missingSkills) {
-  const response = await fetch(`${BASE_URL}/ai/assistant`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      resume_text: resumeText,
-      job_description: jobDescription,
-      missing_skills: missingSkills,
-    }),
-  });
+export async function askResumeAI(
+  resumeText,
+  jobDescription,
+  atsScore,
+  missingSkills
+) {
+  const response = await fetch(
+    "https://ai-resume-analyzer-0bi6.onrender.com/ai/assistant",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        resume_text: resumeText || "",
+        job_description: jobDescription || "",
+        ats_score: Number(atsScore) || 0,
+        missing_skills: Array.isArray(missingSkills) ? missingSkills : [],
+      }),
+    }
+  );
 
   if (!response.ok) {
     throw new Error("AI assistant failed");
   }
 
-  return response.json(); 
-  // { ai_response: string (5–7 bullet points) }
+  return response.json();
 }
+
 
 // ===============================
 // PDF REPORT DOWNLOAD

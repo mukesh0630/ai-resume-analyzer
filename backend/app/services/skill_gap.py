@@ -1,20 +1,42 @@
-SKILLS = [
-    "python", "java", "javascript", "react", "node", "fastapi",
-    "django", "flask", "mongodb", "mysql", "postgresql",
-    "api", "rest", "rest api", "docker", "kubernetes",
-    "aws", "azure", "git", "github", "linux",
-    "machine learning", "nlp", "data analysis",
-    "html", "css", "tailwind", "sql"
-]
+import re
+
+SKILL_KEYWORDS = {
+    "python": ["python"],
+    "java": ["java"],
+    "javascript": ["javascript", "js"],
+    "react": ["react", "react.js"],
+    "fastapi": ["fastapi"],
+    "django": ["django"],
+    "mongodb": ["mongodb", "mongo"],
+    "sql": ["sql", "mysql", "postgres"],
+    "docker": ["docker"],
+    "aws": ["aws", "amazon web services"],
+    "git": ["git", "github"],
+    "nlp": ["nlp", "natural language processing"],
+    "api": ["api", "rest", "rest api"]
+}
+
 def extract_skills(text: str):
     text = text.lower()
-    return [s for s in SKILLS if s in text]
+    found = set()
 
-def skill_gap(resume: str, job: str):
-    resume_skills = set(extract_skills(resume))
-    job_skills = set(extract_skills(job))
+    for skill, variants in SKILL_KEYWORDS.items():
+        for v in variants:
+            if re.search(rf"\b{v}\b", text):
+                found.add(skill)
+                break
+
+    return found
+
+
+def calculate_skill_gap(resume_text: str, job_text: str):
+    resume_skills = extract_skills(resume_text)
+    job_skills = extract_skills(job_text)
+
+    matched = list(resume_skills & job_skills)
+    missing = list(job_skills - resume_skills)
 
     return {
-        "matched": list(resume_skills & job_skills),
-        "missing": list(job_skills - resume_skills)
+        "matched_skills": matched,
+        "missing_skills": missing
     }

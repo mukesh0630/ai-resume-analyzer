@@ -1,20 +1,37 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException
-from backend.app.services.resume_parser import extract_text_from_pdf, extract_text_from_docx
+from fastapi import APIRouter, UploadFile, File
+import os
+import uuid
+from backend.app.services.resume_parser import (
+    extract_text_from_pdf,
+    extract_text_from_docx
+)
 
-router = APIRouter(prefix="/resume", tags=["Resume"])
+router = APIRouter(
+    prefix="/resume",
+    tags=["Resume"]
+)
 
 
 @router.post("/upload")
 async def upload_resume(file: UploadFile = File(...)):
-    if file.filename.endswith(".pdf"):
-        text = extract_text_from_pdf(file.file)
-    elif file.filename.endswith(".docx"):
-        text = extract_text_from_docx(file.file)
+    ext = file.filename.split(".")[-1].lower()
+    temp_filename = f"temp_{uuid.uuid4()}.{ext}"
+
+    with open(temp_filename, "wb") as f:
+        f.write(await file.read())
+
+    if ext == "pdf":
+        text = extract_text_from_pdf(temp_filename)
+    elif ext in ["docx", "doc"]:
+        text = extract_text_from_docx(temp_filename)
     else:
-        raise HTTPException(status_code=400, detail="Only PDF or DOCX files are supported")
+        os.remove(temp_filename)
+        return {"error": "Unsupported file format"}
+
+    os.remove(temp_filename)
 
     return {
         "filename": file.filename,
         "text_length": len(text),
-        "extracted_text_preview": text[:500]
+        "extracted_text": text
     }

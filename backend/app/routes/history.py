@@ -1,18 +1,51 @@
 from fastapi import APIRouter
-from pydantic import BaseModel
-from typing import List
+from datetime import datetime
+from backend.app.firebase_config import db
 from backend.app.services.feedback import generate_feedback
 
-router = APIRouter(prefix="/feedback", tags=["Feedback"])
+router = APIRouter(
+    prefix="/history",
+    tags=["History"]
+)
 
-class FeedbackRequest(BaseModel):
-    ats_score: float
-    missing_skills: List[str]
 
-@router.post("")
-def feedback(data: FeedbackRequest):
-    return {
-        "feedback": generate_feedback(
-            data.ats_score, data.missing_skills
-        )
+@router.post("/save")
+def save_history(data: dict):
+    user_id = data["user_id"]
+
+    ats_score = data.get("ats_score", 0)
+    missing_skills = data.get("missing_skills", [])
+
+    # ✅ FIXED: pass dict instead of 2 args
+    feedback = generate_feedback({
+        "ats_score": ats_score,
+        "missing_skills": missing_skills
+    })
+
+    record = {
+        "ats_score": ats_score,
+        "missing_skills": missing_skills,
+        "feedback": feedback,
+        "created_at": datetime.utcnow(),
     }
+
+    db.collection("users") \
+      .document(user_id) \
+      .collection("history") \
+      .add(record)
+
+    return {"status": "saved"}
+
+
+@router.get("/{user_id}")
+def get_history(user_id: str):
+    docs = (
+        db.collection("users")
+        .document(user_id)
+        .collection("history")
+        .order_by("created_at", direction="DESCENDING")
+        .stream()
+    )
+
+    history = [doc.to_dict() for doc in docs]
+    return {"history": history}
