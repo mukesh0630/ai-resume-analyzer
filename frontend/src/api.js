@@ -82,6 +82,9 @@ export async function getFeedback(atsScore, missingSkills) {
       })
     }
   );
+  if (!res.ok) {
+    throw new Error("Feedback failed");
+  }
 
   return res.json();
 }

@@ -29,7 +29,7 @@ export default function ResumeUploader() {
 
   /* ---------------- ANALYZE ---------------- */
   async function analyzeResume() {
-    if (!file || !jobDesc) {
+    if (!file || !jobDesc.trim()) {
       alert("Upload resume and paste job description");
       return;
     }
@@ -46,13 +46,18 @@ export default function ResumeUploader() {
         { method: "POST", body: formData }
       );
 
-      const uploadData = await uploadRes.json();
-      const parsedText = uploadData.extracted_text;
-
-      if (!parsedText || parsedText.length < 200) {
-        throw new Error("Resume parsing failed");
+      if (!uploadRes.ok) {
+        throw new Error("Resume upload failed");
       }
 
+      const uploadData = await uploadRes.json();
+      const parsedText = uploadData.extracted_text || "";
+
+      if (parsedText.length < 200) {
+        throw new Error("Resume parsing failed or text too short");
+      }
+
+      // ✅ Store for UI + AIChat
       setResumeText(parsedText);
 
       /* 2️⃣ ATS SCORE */
@@ -61,24 +66,28 @@ export default function ResumeUploader() {
 
       /* 3️⃣ SKILL GAP */
       const gap = await getSkillGap(parsedText, jobDesc);
-      setMissingSkills(gap.missing_skills);
+      setMissingSkills(gap.missing_skills || []);
 
       /* 4️⃣ ROADMAP */
-      const roadmapRes = await getLearningRoadmap(gap.missing_skills);
+      const roadmapRes = await getLearningRoadmap(gap.missing_skills || []);
       setRoadmap(roadmapRes.learning_roadmap || []);
 
       /* 5️⃣ AI INSIGHTS */
-      const ai = await askResumeAI(parsedText, jobDesc, gap.missing_skills);
-      setAiResponse(ai.ai_response);
+      const ai = await askResumeAI(
+        parsedText,
+        jobDesc,
+        gap.missing_skills || []
+      );
+      setAiResponse(ai.ai_response || "");
 
-      /* 6️⃣ QUICK FEEDBACK (simple rule-based) */
+      /* 6️⃣ QUICK FEEDBACK (simple + fast) */
       setFeedback([
         ats.ats_score < 60
           ? "Improve keyword alignment with job description"
           : "Good ATS compatibility",
         gap.missing_skills.length > 0
           ? "Consider learning missing skills"
-          : "Skills well aligned",
+          : "Skills are well aligned",
       ]);
 
       /* 7️⃣ SAVE HISTORY */
@@ -90,7 +99,9 @@ export default function ResumeUploader() {
 
     } catch (err) {
       console.error(err);
-      alert("Analysis failed. Backend is reachable but input was invalid.");
+      alert(
+        "Analysis failed. Backend is reachable but input was invalid or parsing failed."
+      );
     } finally {
       setLoading(false);
     }
@@ -156,7 +167,9 @@ export default function ResumeUploader() {
             <div className="bg-white/10 p-6 rounded-xl">
               <h3 className="font-semibold mb-2">Missing Skills</h3>
               <ul className="text-sm text-gray-300">
-                {missingSkills.map((s, i) => <li key={i}>• {s}</li>)}
+                {missingSkills.map((s, i) => (
+                  <li key={i}>• {s}</li>
+                ))}
               </ul>
             </div>
 
@@ -174,7 +187,9 @@ export default function ResumeUploader() {
           <div className="bg-white/10 p-6 rounded-xl">
             <h3 className="text-xl font-semibold mb-3">Quick Feedback</h3>
             <ul className="list-disc ml-5 text-gray-300 space-y-2">
-              {feedback.map((f, i) => <li key={i}>{f}</li>)}
+              {feedback.map((f, i) => (
+                <li key={i}>{f}</li>
+              ))}
             </ul>
           </div>
 
@@ -198,3 +213,4 @@ export default function ResumeUploader() {
     </div>
   );
 }
+
