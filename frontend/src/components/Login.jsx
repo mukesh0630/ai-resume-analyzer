@@ -1,20 +1,79 @@
-export default function Login({ onLogin, onSwitch }) {
+import { useState } from "react";
+import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
+import { auth, googleProvider } from "../firebase";
+import { saveUserProfile } from "../utils/saveUserProfile";
+import { auth } from "../firebase";
+
+export default function Login({ onSwitch, onSuccess }) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+
+  async function handleLogin() {
+  try {
+    const res = await signInWithEmailAndPassword(auth, email, password);
+    await saveUserProfile(res.user);
+    onSuccess();
+  } catch {
+    setError("Invalid email or password");
+  }
+}
+
+async function handleGoogle() {
+  try {
+    const res = await signInWithPopup(auth, googleProvider);
+    await saveUserProfile(res.user);
+    onSuccess();
+  } catch {
+    setError("Google sign-in failed");
+  }
+}
+
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-black text-white">
-      <div className="bg-white/10 backdrop-blur-xl p-8 rounded-2xl w-full max-w-md">
-        <h2 className="text-3xl font-bold mb-6 text-center">Welcome Back</h2>
+      <div className="bg-white/10 backdrop-blur-xl p-10 rounded-3xl w-full max-w-md border border-white/10">
 
-        <input className="input" placeholder="Email" />
-        <input className="input mt-4" type="password" placeholder="Password" />
+        <h2 className="text-3xl font-bold text-center mb-6">ResumeAI</h2>
 
-        <button onClick={onLogin} className="btn-primary mt-6 w-full">
-          Login
+        <input
+          className="w-full mb-4 px-4 py-3 rounded-xl bg-black/40 border border-white/10"
+          placeholder="Email"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+        />
+
+        <input
+          type="password"
+          className="w-full mb-4 px-4 py-3 rounded-xl bg-black/40 border border-white/10"
+          placeholder="Password"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+        />
+
+        {error && <p className="text-red-400 text-sm mb-3">{error}</p>}
+
+        <button
+          onClick={handleLogin}
+          className="w-full bg-purple-500 py-3 rounded-xl font-semibold hover:bg-purple-600"
+        >
+          Log In
         </button>
 
-        <p className="text-sm text-gray-400 mt-4 text-center">
+        <button
+          onClick={handleGoogle}
+          className="w-full mt-4 bg-white text-black py-3 rounded-xl font-semibold"
+        >
+          Continue with Google
+        </button>
+
+        <p className="text-center text-gray-400 mt-6">
           New here?{" "}
-          <span onClick={onSwitch} className="text-blue-400 cursor-pointer">
-            Create account
+          <span
+            onClick={onSwitch}
+            className="text-purple-400 cursor-pointer"
+          >
+            Sign up
           </span>
         </p>
       </div>
