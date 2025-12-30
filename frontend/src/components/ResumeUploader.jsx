@@ -24,20 +24,22 @@ export default function ResumeUploader() {
 
   /* ---------------- RESUME UPLOAD ---------------- */
   function handleResumeUpload(e) {
-    setFile(e.target.files[0]);
+    const selected = e.target.files[0];
+    if (!selected) return;
+    setFile(selected);
   }
 
   /* ---------------- ANALYZE ---------------- */
   async function analyzeResume() {
     if (!file || !jobDesc.trim()) {
-      alert("Upload resume and paste job description");
+      alert("Please upload a resume and paste job description.");
       return;
     }
 
     try {
       setLoading(true);
 
-      /* 1️⃣ Upload resume to backend parser */
+      /* 1️⃣ Upload resume */
       const formData = new FormData();
       formData.append("file", file);
 
@@ -46,19 +48,22 @@ export default function ResumeUploader() {
         { method: "POST", body: formData }
       );
 
-      if (!uploadRes.ok) {
-        throw new Error("Resume upload failed");
-      }
-
       const uploadData = await uploadRes.json();
-      const parsedText = uploadData.extracted_text || "";
 
-      if (parsedText.length < 200) {
-        throw new Error("Resume parsing failed or text too short");
-      }
+console.log("Resume upload response:", uploadData);
 
-      // ✅ Store for UI + AIChat
-      setResumeText(parsedText);
+const parsedText =
+  uploadData.extracted_text ||
+  uploadData.extracted_text_preview ||
+  uploadData.text ||
+  "";
+
+if (!parsedText || parsedText.length < 100) {
+  throw new Error("Resume parsing failed");
+}
+
+setResumeText(parsedText);
+
 
       /* 2️⃣ ATS SCORE */
       const ats = await getATSScore(parsedText, jobDesc);
@@ -73,38 +78,52 @@ export default function ResumeUploader() {
       setRoadmap(roadmapRes.learning_roadmap || []);
 
       /* 5️⃣ AI INSIGHTS */
-      const ai = await askResumeAI(
-        parsedText,
-        jobDesc,
-        gap.missing_skills || []
-      );
-      setAiResponse(ai.ai_response || "");
 
-      /* 6️⃣ QUICK FEEDBACK (simple + fast) */
+      /* 6️⃣ QUICK FEEDBACK */
       setFeedback([
         ats.ats_score < 60
           ? "Improve keyword alignment with job description"
           : "Good ATS compatibility",
         gap.missing_skills.length > 0
           ? "Consider learning missing skills"
-          : "Skills are well aligned",
+          : "Skills gives strong match",
       ]);
 
       /* 7️⃣ SAVE HISTORY */
-      await saveHistory("demo-user", {
-        ats_score: ats.ats_score,
-        missing_skills: gap.missing_skills,
-        roadmap: roadmapRes.learning_roadmap,
-      });
+      // AI Insights (optional)
+try {
+  const ai = await askResumeAI(parsedText, jobDesc, gap.missing_skills);
+  setAiResponse(ai.ai_response);
+} catch (e) {
+  console.warn("AI assistant failed, continuing without it");
+}
+
+// Save history (optional)
+try {
+  await saveHistory("demo-user", {
+    ats_score: ats.ats_score,
+    missing_skills: gap.missing_skills,
+    roadmap: roadmapRes.learning_roadmap,
+  });
+} catch (e) {
+  console.warn("History save failed");
+}
 
     } catch (err) {
-      console.error(err);
-      alert(
-        "Analysis failed. Backend is reachable but input was invalid or parsing failed."
-      );
-    } finally {
-      setLoading(false);
-    }
+  console.error("Non-fatal analysis error:", err);
+
+  // Show error ONLY if ATS score is not available
+  if (atsScore === null) {
+    alert(
+      "Analysis failed.\n\n" +
+      "• Resume text could not be parsed\n" +
+      "• Please upload a valid PDF/DOCX\n" +
+      "• Ensure job description is not empty"
+    );
+  }
+} finally {
+  setLoading(false);
+}
   }
 
   /* ---------------- PDF ---------------- */
@@ -126,12 +145,10 @@ export default function ResumeUploader() {
   /* ---------------- UI ---------------- */
   return (
     <div className="max-w-5xl mx-auto space-y-8">
-
       <h1 className="text-4xl font-bold text-purple-400">
         Analyze Your Resume
       </h1>
 
-      {/* INPUT */}
       <div className="bg-white/10 p-6 rounded-2xl border border-white/10">
         <input
           type="file"
@@ -156,7 +173,6 @@ export default function ResumeUploader() {
         </button>
       </div>
 
-      {/* RESULTS */}
       {atsScore !== null && (
         <>
           <div className="grid md:grid-cols-3 gap-6">
@@ -183,7 +199,6 @@ export default function ResumeUploader() {
             </div>
           </div>
 
-          {/* Feedback */}
           <div className="bg-white/10 p-6 rounded-xl">
             <h3 className="text-xl font-semibold mb-3">Quick Feedback</h3>
             <ul className="list-disc ml-5 text-gray-300 space-y-2">

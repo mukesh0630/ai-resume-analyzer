@@ -3,15 +3,15 @@ import re
 SKILL_KEYWORDS = {
     "python": ["python"],
     "java": ["java"],
-    "javascript": ["javascript", "js"],
-    "react": ["react", "react.js"],
+    "javascript": ["javascript", "js", "nodejs", "node.js"],
+    "react": ["react", "reactjs", "react.js"],
     "fastapi": ["fastapi"],
     "django": ["django"],
-    "mongodb": ["mongodb", "mongo"],
-    "sql": ["sql", "mysql", "postgres"],
-    "docker": ["docker"],
-    "aws": ["aws", "amazon web services"],
-    "git": ["git", "github"],
+    "mongodb": ["mongodb", "mongo", "mongoose"],
+    "sql": ["sql", "mysql", "postgres", "postgresql"],
+    "docker": ["docker", "dockerfile"],
+    "aws": ["aws", "amazon web services", "ec2", "s3"],
+    "git": ["git", "github", "gitlab"],
     "nlp": ["nlp", "natural language processing"],
     "api": ["api", "rest", "rest api"]
 }
@@ -22,11 +22,13 @@ def extract_skills(text: str):
 
     for skill, variants in SKILL_KEYWORDS.items():
         for v in variants:
-            if re.search(rf"\b{v}\b", text):
+            # allow partial matches inside words like reactjs, mongodb, github
+            if re.search(rf"{re.escape(v)}", text):
                 found.add(skill)
                 break
 
     return found
+
 
 
 def calculate_skill_gap(resume_text: str, job_text: str):
