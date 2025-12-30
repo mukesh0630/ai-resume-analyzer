@@ -1,20 +1,17 @@
 import { useState } from "react";
 
-/* Pages */
+/* Pages / Components */
 import Login from "./components/Login";
 import ResumeUploader from "./components/ResumeUploader";
 import History from "./components/History";
-
-/* UI Components */
-import ATSScoreRing from "./components/ATSScoreRing";
-import SkillGapChart from "./components/SkillGapChart";
+import DashboardHome from "./components/DashboardHome";
 
 /* ===============================
    MAIN APP
 ================================ */
 export default function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(true); // demo true
-  const [page, setPage] = useState("dashboard");
+  const [isLoggedIn, setIsLoggedIn] = useState(true); // demo
+  const [activePage, setActivePage] = useState("dashboard");
 
   if (!isLoggedIn) {
     return <Login />;
@@ -30,51 +27,21 @@ export default function App() {
         </h2>
 
         <nav className="space-y-4 text-gray-300">
-          <SidebarItem label="Dashboard" onClick={() => setPage("dashboard")} />
-          <SidebarItem label="Analyze Resume" onClick={() => setPage("analyze")} />
-          <SidebarItem label="History" onClick={() => setPage("history")} />
-          <SidebarItem label="Profile" onClick={() => setPage("profile")} />
+          <SidebarItem label="Dashboard" onClick={() => setActivePage("dashboard")} />
+          <SidebarItem label="Analyze Resume" onClick={() => setActivePage("analyze")} />
+          <SidebarItem label="History" onClick={() => setActivePage("history")} />
+          <SidebarItem label="Profile" onClick={() => setActivePage("profile")} />
         </nav>
       </aside>
 
       {/* MAIN CONTENT */}
       <main className="flex-1 p-8 overflow-y-auto">
-        {page === "dashboard" && <DashboardHome />}
-        {page === "analyze" && <ResumeUploader />}
-        {page === "history" && <History />}
-        {page === "profile" && <Profile />}
+        {activePage === "dashboard" && <DashboardHome />}
+        {activePage === "analyze" && <ResumeUploader />}
+        {activePage === "history" && <History />}
+        {activePage === "profile" && <Profile />}
       </main>
     </div>
-  );
-}
-
-/* ===============================
-   DASHBOARD HOME
-================================ */
-function DashboardHome() {
-  return (
-    <>
-      {/* INTRO */}
-      <div className="bg-gradient-to-r from-purple-600/20 to-blue-600/20 
-                      border border-white/10 rounded-3xl p-8 mb-10">
-        <h1 className="text-4xl font-bold mb-4">
-          AI Resume Intelligence Dashboard
-        </h1>
-
-        <p className="text-gray-300 max-w-3xl">
-          Upload your resume, compare it with job descriptions, and instantly
-          see how well it performs against modern ATS systems.
-          Get AI-powered insights and personalized learning roadmaps.
-        </p>
-
-        <ul className="mt-6 space-y-2 text-gray-300">
-          <li>✔ ATS Score with animation</li>
-          <li>✔ Skill gap & similarity analysis</li>
-          <li>✔ AI-powered career guidance</li>
-          <li>✔ Resume history tracking</li>
-        </ul>
-      </div>
-    </>
   );
 }
 
@@ -103,7 +70,7 @@ function Profile() {
 }
 
 /* ===============================
-   REUSABLE UI
+   SIDEBAR ITEM
 ================================ */
 function SidebarItem({ label, onClick }) {
   return (
@@ -113,22 +80,5 @@ function SidebarItem({ label, onClick }) {
     >
       {label}
     </button>
-  );
-}
-
-function StatCard({ title, value }) {
-  return (
-    <Card>
-      <p className="text-gray-400 text-sm mb-2">{title}</p>
-      <h3 className="text-3xl font-bold">{value}</h3>
-    </Card>
-  );
-}
-
-function Card({ children }) {
-  return (
-    <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/10 flex justify-center items-center">
-      {children}
-    </div>
   );
 }

@@ -2,6 +2,7 @@ import { useState } from "react";
 import ATSScoreRing from "./ATSScoreRing";
 import SkillGapChart from "./SkillGapChart";
 import AIChat from "./AIChat";
+import SkillRadarChart from "./SkillRadarChart";
 import {
   getATSScore,
   getSkillGap,
@@ -209,6 +210,17 @@ try {
           </div>
 
           <SkillGapChart skills={missingSkills} />
+          <SkillRadarChart
+  matchedSkills={
+    missingSkills.length === 0
+      ? []
+      : roadmap.map((r) => r.skill).filter(
+          (s) => !missingSkills.includes(s)
+        )
+  }
+  missingSkills={missingSkills}
+/>
+
 
           <AIChat
             resumeText={resumeText}
