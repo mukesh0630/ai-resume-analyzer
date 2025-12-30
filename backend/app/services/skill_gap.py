@@ -1,47 +1,57 @@
 import re
+from typing import Dict, List
 
 SKILL_KEYWORDS = {
     "python": ["python"],
     "java": ["java"],
-    "javascript": ["javascript", "js", "nodejs", "node.js"],
-    "react": ["react", "reactjs", "react.js"],
+    "javascript": ["javascript", "js"],
+    "react": ["react", "react.js", "reactjs"],
     "fastapi": ["fastapi"],
     "django": ["django"],
-    "mongodb": ["mongodb", "mongo", "mongoose"],
+    "mongodb": ["mongodb", "mongo", "mongo db"],
     "sql": ["sql", "mysql", "postgres", "postgresql"],
-    "docker": ["docker", "dockerfile"],
-    "aws": ["aws", "amazon web services", "ec2", "s3"],
+    "docker": ["docker", "dockerfile", "docker-compose"],
+    "aws": ["aws", "amazon web services", "ec2", "s3", "iam"],
     "git": ["git", "github", "gitlab"],
     "nlp": ["nlp", "natural language processing"],
-    "api": ["api", "rest", "rest api"]
+    "api": ["api", "rest api", "restful api"],
+    "ats": ["ats", "applicant tracking system"]
 }
-import re
 
-def normalize(text: str):
-    return re.sub(r"[^a-z0-9\s]", " ", text.lower())
 
-def extract_skills(text: str):
-    text = normalize(text)
+def normalize_text(text: str) -> str:
+    """
+    Normalize resume/job text to avoid parsing issues
+    """
+    text = text.lower()
+    text = re.sub(r"[^a-z0-9\s.+]", " ", text)  # remove bullets/symbols
+    text = re.sub(r"\s+", " ", text)            # normalize spacing
+    return text
+
+
+def extract_skills(text: str) -> List[str]:
+    text = normalize_text(text)
     found = set()
 
     for skill, variants in SKILL_KEYWORDS.items():
         for v in variants:
-            v = normalize(v)
             if v in text:
                 found.add(skill)
                 break
 
-    return found
+    return sorted(found)
 
 
-def calculate_skill_gap(resume_text: str, job_text: str):
-    resume_skills = extract_skills(resume_text)
-    job_skills = extract_skills(job_text)
+def calculate_skill_gap(resume_text: str, job_text: str) -> Dict:
+    resume_skills = set(extract_skills(resume_text))
+    job_skills = set(extract_skills(job_text))
 
-    matched = list(resume_skills & job_skills)
-    missing = list(job_skills - resume_skills)
+    matched = sorted(resume_skills & job_skills)
+    missing = sorted(job_skills - resume_skills)
 
     return {
         "matched_skills": matched,
-        "missing_skills": missing
+        "missing_skills": missing,
+        "resume_skills": sorted(resume_skills),
+        "job_skills": sorted(job_skills),
     }

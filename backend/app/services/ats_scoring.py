@@ -13,11 +13,16 @@ def calculate_ats_score(resume_text: str, job_text: str):
     resume = resume_text.lower()
     job = job_text.lower()
 
-    resume_skills = extract_skills(resume)
-    job_skills = extract_skills(job)
+    # extract_skills now returns LIST → convert to SET
+    resume_skills = set(extract_skills(resume))
+    job_skills = set(extract_skills(job))
 
     if not job_skills:
-        return {"ats_score": 0}
+        return {
+            "ats_score": 0,
+            "matched_skills": [],
+            "missing_skills": []
+        }
 
     # 1️⃣ Keyword Match Ratio (40%)
     matched = resume_skills & job_skills
@@ -62,6 +67,6 @@ def calculate_ats_score(resume_text: str, job_text: str):
 
     return {
         "ats_score": round(min(total_score, 100), 2),
-        "matched_skills": list(matched),
-        "missing_skills": list(job_skills - resume_skills)
+        "matched_skills": sorted(matched),
+        "missing_skills": sorted(job_skills - resume_skills)
     }

@@ -32,5 +32,7 @@ def skill_gap(data: SkillGapRequest):
 
     return {
         "matched_skills": result["matched_skills"],
-        "missing_skills": result["missing_skills"]
+        "missing_skills": result["missing_skills"],
+        "resume_skills": result["resume_skills"],
+        "job_skills": result["job_skills"],
     }

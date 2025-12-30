@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { signInWithEmailAndPassword, signInWithPopup } from "../firebase";
+import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "../firebase";
 import { saveUserProfile } from "../utils/saveUserProfile";
 export default function Login({ onSwitch, onSuccess }) {
