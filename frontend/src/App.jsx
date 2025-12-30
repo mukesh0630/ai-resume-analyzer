@@ -74,18 +74,6 @@ function DashboardHome() {
           <li>✔ Resume history tracking</li>
         </ul>
       </div>
-
-      {/* STATS */}
-      <div className="grid md:grid-cols-3 gap-6 mb-10">
-        <Card>
-          <ATSScoreRing score={82} />
-        </Card>
-        <StatCard title="Skill Match" value="74%" />
-        <StatCard title="Similarity" value="68%" />
-      </div>
-
-      {/* CHART */}
-      <SkillGapChart />
     </>
   );
 }

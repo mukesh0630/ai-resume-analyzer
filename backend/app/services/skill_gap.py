@@ -15,20 +15,23 @@ SKILL_KEYWORDS = {
     "nlp": ["nlp", "natural language processing"],
     "api": ["api", "rest", "rest api"]
 }
+import re
+
+def normalize(text: str):
+    return re.sub(r"[^a-z0-9\s]", " ", text.lower())
 
 def extract_skills(text: str):
-    text = text.lower()
+    text = normalize(text)
     found = set()
 
     for skill, variants in SKILL_KEYWORDS.items():
         for v in variants:
-            # allow partial matches inside words like reactjs, mongodb, github
-            if re.search(rf"{re.escape(v)}", text):
+            v = normalize(v)
+            if v in text:
                 found.add(skill)
                 break
 
     return found
-
 
 
 def calculate_skill_gap(resume_text: str, job_text: str):
