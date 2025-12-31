@@ -1,16 +1,25 @@
 import { useEffect, useState } from "react";
 import { fetchHistory } from "../api";
+import { auth } from "../firebase";
 
-export default function History() {
+export default function History({ onSelect, goAnalyze }) {
   const [history, setHistory] = useState([]);
 
   useEffect(() => {
-    fetchHistory("demo-user").then((res) => {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    fetchHistory(user.uid).then((res) => {
       if (res.history) {
-        // Sort latest first
-        const sorted = res.history.sort(
-          (a, b) => new Date(b.created_at) - new Date(a.created_at)
-        );
+        const sorted = res.history.sort((a, b) => {
+          const da = a.created_at?.seconds
+            ? new Date(a.created_at.seconds * 1000)
+            : new Date(a.created_at);
+          const db = b.created_at?.seconds
+            ? new Date(b.created_at.seconds * 1000)
+            : new Date(b.created_at);
+          return db - da;
+        });
         setHistory(sorted);
       }
     });
@@ -27,34 +36,44 @@ export default function History() {
       )}
 
       <div className="space-y-4">
-        {history.map((item, index) => (
-          <div
-            key={index}
-            className="bg-white/10 backdrop-blur-xl border border-white/10 rounded-2xl p-6"
-          >
-            <div className="flex justify-between items-center">
-              <h3 className="text-xl font-semibold">
-                ATS Score: {item.ats_score}%
-              </h3>
-              <span className="text-sm text-gray-400">
-                {new Date(item.created_at).toLocaleString()}
-              </span>
+        {history.map((item, index) => {
+          const createdAt = item.created_at?.seconds
+            ? new Date(item.created_at.seconds * 1000)
+            : new Date(item.created_at);
+
+          return (
+            <div
+              key={index}
+              onClick={() => {
+                if (onSelect) onSelect(item);
+                if (goAnalyze) goAnalyze();
+              }}
+              className="bg-white/10 backdrop-blur-xl border border-white/10 rounded-2xl p-6 cursor-pointer hover:border-purple-400 transition"
+            >
+              <div className="flex justify-between items-center">
+                <h3 className="text-xl font-semibold">
+                  ATS Score: {item.ats_score}%
+                </h3>
+                <span className="text-sm text-gray-400">
+                  {createdAt.toLocaleString()}
+                </span>
+              </div>
+
+              <p className="mt-3 text-gray-300">
+                Missing Skills:
+                {item.missing_skills?.length > 0
+                  ? ` ${item.missing_skills.join(", ")}`
+                  : " None 🎉"}
+              </p>
+
+              <ul className="mt-3 list-disc ml-5 text-gray-400 text-sm">
+                {item.feedback?.map((f, i) => (
+                  <li key={i}>{f}</li>
+                ))}
+              </ul>
             </div>
-
-            <p className="mt-3 text-gray-300">
-              Missing Skills:
-              {item.missing_skills.length > 0
-                ? ` ${item.missing_skills.join(", ")}`
-                : " None 🎉"}
-            </p>
-
-            <ul className="mt-3 list-disc ml-5 text-gray-400 text-sm">
-              {item.feedback?.map((f, i) => (
-                <li key={i}>{f}</li>
-              ))}
-            </ul>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

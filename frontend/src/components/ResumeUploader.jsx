@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import ATSScoreRing from "./ATSScoreRing";
 import SkillGapChart from "./SkillGapChart";
 import AIChat from "./AIChat";
 import SkillRadarChart from "./SkillRadarChart";
+import { auth } from "../firebase";
+
 import {
   getATSScore,
   getSkillGap,
@@ -12,7 +14,7 @@ import {
   downloadPDFReport,
 } from "../api";
 
-export default function ResumeUploader() {
+export default function ResumeUploader({ selectedHistory }) {
   const [file, setFile] = useState(null);
   const [jobDesc, setJobDesc] = useState("");
   const [resumeText, setResumeText] = useState("");
@@ -22,6 +24,15 @@ export default function ResumeUploader() {
   const [aiResponse, setAiResponse] = useState("");
   const [feedback, setFeedback] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  /* 🔁 LOAD FROM HISTORY (CLICK TO REOPEN) */
+  useEffect(() => {
+    if (selectedHistory) {
+      setAtsScore(selectedHistory.ats_score);
+      setMissingSkills(selectedHistory.missing_skills || []);
+      setFeedback(selectedHistory.feedback || []);
+    }
+  }, [selectedHistory]);
 
   /* ---------------- RESUME UPLOAD ---------------- */
   function handleResumeUpload(e) {
@@ -34,6 +45,12 @@ export default function ResumeUploader() {
   async function analyzeResume() {
     if (!file || !jobDesc.trim()) {
       alert("Please upload a resume and paste job description.");
+      return;
+    }
+
+    const user = auth.currentUser;
+    if (!user) {
+      alert("Please login again");
       return;
     }
 
@@ -51,20 +68,17 @@ export default function ResumeUploader() {
 
       const uploadData = await uploadRes.json();
 
-console.log("Resume upload response:", uploadData);
+      const parsedText =
+        uploadData.extracted_text ||
+        uploadData.extracted_text_preview ||
+        uploadData.text ||
+        "";
 
-const parsedText =
-  uploadData.extracted_text ||
-  uploadData.extracted_text_preview ||
-  uploadData.text ||
-  "";
+      if (!parsedText || parsedText.length < 50) {
+        throw new Error("Resume parsing failed");
+      }
 
-if (!parsedText || parsedText.length < 100) {
-  throw new Error("Resume parsing failed");
-}
-
-setResumeText(parsedText);
-
+      setResumeText(parsedText);
 
       /* 2️⃣ ATS SCORE */
       const ats = await getATSScore(parsedText, jobDesc);
@@ -78,7 +92,13 @@ setResumeText(parsedText);
       const roadmapRes = await getLearningRoadmap(gap.missing_skills || []);
       setRoadmap(roadmapRes.learning_roadmap || []);
 
-      /* 5️⃣ AI INSIGHTS */
+      /* 5️⃣ AI INSIGHTS (optional) */
+      try {
+        const ai = await askResumeAI(parsedText, jobDesc, gap.missing_skills);
+        setAiResponse(ai.ai_response);
+      } catch {
+        console.warn("AI assistant failed");
+      }
 
       /* 6️⃣ QUICK FEEDBACK */
       setFeedback([
@@ -87,33 +107,20 @@ setResumeText(parsedText);
           : "Good ATS compatibility",
         gap.missing_skills.length > 0
           ? "Consider learning missing skills"
-          : "Skills gives strong match",
+          : "Strong skill match",
       ]);
 
-      /* 7️⃣ SAVE HISTORY */
-      // AI Insights (optional)
-try {
-  const ai = await askResumeAI(parsedText, jobDesc, gap.missing_skills);
-  setAiResponse(ai.ai_response);
-} catch (e) {
-  console.warn("AI assistant failed, continuing without it");
-}
-
-// Save history (optional)
-try {
-  await saveHistory("demo-user", {
-    ats_score: ats.ats_score,
-    missing_skills: gap.missing_skills,
-    roadmap: roadmapRes.learning_roadmap,
-  });
-} catch (e) {
-  console.warn("History save failed");
-}
+      /* 7️⃣ SAVE HISTORY (ONCE, CORRECTLY) */
+      await saveHistory(user.uid, {
+        ats_score: ats.ats_score,
+        missing_skills: gap.missing_skills,
+        roadmap: roadmapRes.learning_roadmap,
+      });
 
     } catch (err) {
-  console.error("Non-fatal analysis error:", err);
+  console.error("Analysis error:", err);
 
-  // Show error ONLY if ATS score is not available
+  // ❗ Show error ONLY if ATS score was never set
   if (atsScore === null) {
     alert(
       "Analysis failed.\n\n" +
@@ -122,9 +129,8 @@ try {
       "• Ensure job description is not empty"
     );
   }
-} finally {
-  setLoading(false);
 }
+
   }
 
   /* ---------------- PDF ---------------- */
@@ -200,27 +206,11 @@ try {
             </div>
           </div>
 
-          <div className="bg-white/10 p-6 rounded-xl">
-            <h3 className="text-xl font-semibold mb-3">Quick Feedback</h3>
-            <ul className="list-disc ml-5 text-gray-300 space-y-2">
-              {feedback.map((f, i) => (
-                <li key={i}>{f}</li>
-              ))}
-            </ul>
-          </div>
-
           <SkillGapChart skills={missingSkills} />
           <SkillRadarChart
-  matchedSkills={
-    missingSkills.length === 0
-      ? []
-      : roadmap.map((r) => r.skill).filter(
-          (s) => !missingSkills.includes(s)
-        )
-  }
-  missingSkills={missingSkills}
-/>
-
+            matchedSkills={roadmap.map((r) => r.skill)}
+            missingSkills={missingSkills}
+          />
 
           <AIChat
             resumeText={resumeText}
@@ -240,4 +230,3 @@ try {
     </div>
   );
 }
-
