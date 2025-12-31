@@ -16,17 +16,13 @@ def save_history(data: dict):
     ats_score = data.get("ats_score", 0)
     missing_skills = data.get("missing_skills", [])
 
-    # ✅ FIXED: pass dict instead of 2 args
-    feedback = generate_feedback({
-        "ats_score": ats_score,
-        "missing_skills": missing_skills
-    })
+    feedback = generate_feedback(ats_score, missing_skills)
 
     record = {
         "ats_score": ats_score,
         "missing_skills": missing_skills,
         "feedback": feedback,
-        "created_at": datetime.utcnow(),
+        "created_at": datetime.utcnow().isoformat()
     }
 
     db.collection("users") \
@@ -43,7 +39,6 @@ def get_history(user_id: str):
         db.collection("users")
         .document(user_id)
         .collection("history")
-        .order_by("created_at", direction="DESCENDING")
         .stream()
     )
 
