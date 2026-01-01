@@ -1,26 +1,40 @@
 import { useEffect, useState } from "react";
 import { fetchHistory } from "../api";
 import { auth } from "../firebase";
+import { db } from "../firebase";
+import {
+  collection,
+  getDocs,
+  query,
+  orderBy,
+} from "firebase/firestore";
+
 
 export default function History({ onSelect,}) {
   const [history, setHistory] = useState([]);
 
   useEffect(() => {
-  const unsubscribe = auth.onAuthStateChanged((user) => {
-    if (!user) return;
+  const user = auth.currentUser;
+  if (!user) return;
 
-    fetchHistory(user.uid).then((res) => {
-      if (res.history) {
-        const sorted = res.history.sort(
-          (a, b) => new Date(b.created_at) - new Date(a.created_at)
-        );
-        setHistory(sorted);
-      }
-    });
-  });
+  const loadHistory = async () => {
+    const q = query(
+      collection(db, "users", user.uid, "history"),
+      orderBy("created_at", "desc")
+    );
 
-  return () => unsubscribe();
+    const snap = await getDocs(q);
+    const data = snap.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    setHistory(data);
+  };
+
+  loadHistory();
 }, []);
+
 
   return (
     <div className="max-w-4xl mx-auto">

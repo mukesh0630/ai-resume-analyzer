@@ -10,10 +10,11 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
+  if (!user) return;
 
-    fetchHistory(user.uid).then((res) => {
-      const h = res.history || [];
+  fetchHistory(user.uid)
+    .then((res) => {
+      const h = res?.history || [];
       setHistory(h);
 
       if (h.length > 0) {
@@ -21,10 +22,16 @@ export default function Profile() {
           h.reduce((sum, i) => sum + (i.ats_score || 0), 0) / h.length;
         setAvgATS(Math.round(avg));
       }
-
-      setLoading(false);
+    })
+    .catch((err) => {
+      console.error("Profile history fetch failed:", err);
+      setHistory([]);
+    })
+    .finally(() => {
+      setLoading(false);   // ✅ ALWAYS stop loading
     });
-  }, [user]);
+}, [user]);
+
 
   useEffect(() => {
     if (avgATS < 40) setLevel("Beginner");
