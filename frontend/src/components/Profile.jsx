@@ -7,18 +7,21 @@ export default function Profile() {
   const [profile, setProfile] = useState(null);
 
   useEffect(() => {
-    async function loadProfile() {
-      const user = auth.currentUser;
-      if (!user) return;
+  const unsubscribe = auth.onAuthStateChanged((user) => {
+    if (!user) return;
 
-      const ref = doc(db, "users", user.uid);
-      const snap = await getDoc(ref);
+    fetchHistory(user.uid).then((res) => {
+      if (res.history) {
+        const sorted = res.history.sort(
+          (a, b) => new Date(b.created_at) - new Date(a.created_at)
+        );
+        setHistory(sorted);
+      }
+    });
+  });
 
-      if (snap.exists()) setProfile(snap.data());
-    }
-
-    loadProfile();
-  }, []);
+  return () => unsubscribe();
+}, []);
 
   if (!profile) return null;
 

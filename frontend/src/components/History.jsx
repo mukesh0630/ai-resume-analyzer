@@ -6,24 +6,21 @@ export default function History({ onSelect, goAnalyze }) {
   const [history, setHistory] = useState([]);
 
   useEffect(() => {
-    const user = auth.currentUser;
+  const unsubscribe = auth.onAuthStateChanged((user) => {
     if (!user) return;
 
     fetchHistory(user.uid).then((res) => {
       if (res.history) {
-        const sorted = res.history.sort((a, b) => {
-          const da = a.created_at?.seconds
-            ? new Date(a.created_at.seconds * 1000)
-            : new Date(a.created_at);
-          const db = b.created_at?.seconds
-            ? new Date(b.created_at.seconds * 1000)
-            : new Date(b.created_at);
-          return db - da;
-        });
+        const sorted = res.history.sort(
+          (a, b) => new Date(b.created_at) - new Date(a.created_at)
+        );
         setHistory(sorted);
       }
     });
-  }, []);
+  });
+
+  return () => unsubscribe();
+}, []);
 
   return (
     <div className="max-w-4xl mx-auto">

@@ -77,15 +77,18 @@ export default function ResumeUploader({ selectedHistory }) {
         uploadData.text ||
         "";
 
-      if (!parsedText || parsedText.length < 50) {
-        throw new Error("Resume parsing failed");
-      }
+      if (!parsedText.trim()) {
+  throw new Error("Resume parsing failed");
+}
+
 
       setResumeText(parsedText);
 
       /* 2️⃣ ATS SCORE */
       const ats = await getATSScore(parsedText, jobDesc);
       setAtsScore(ats.ats_score);
+      analysisCompleted = true;
+
 
       /* 3️⃣ SKILL GAP */
       const gap = await getSkillGap(parsedText, jobDesc);
@@ -130,17 +133,18 @@ export default function ResumeUploader({ selectedHistory }) {
 
       analysisSucceeded = true; // ✅ success confirmed
     } catch (err) {
-      console.error("Analysis error:", err);
+  console.error("Analysis error:", err);
 
-      if (!analysisSucceeded) {
-        alert(
-          "Analysis failed.\n\n" +
-            "• Resume text could not be parsed\n" +
-            "• Please upload a valid PDF/DOCX\n" +
-            "• Ensure job description is not empty"
-        );
-      }
-    } finally {
+  // 🔥 ONLY show error if ATS score was never computed
+  if (atsScore === null) {
+    alert(
+      "Analysis failed.\n\n" +
+      "• Resume text could not be parsed\n" +
+      "• Please upload a valid PDF/DOCX\n" +
+      "• Ensure job description is not empty"
+    );
+  }
+}finally {
       setLoading(false);
     }
   }
