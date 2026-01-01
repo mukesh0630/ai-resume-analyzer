@@ -25,12 +25,13 @@ export default function ResumeUploader({ selectedHistory }) {
   const [feedback, setFeedback] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  /* 🔁 LOAD FROM HISTORY (CLICK TO REOPEN) */
+  /* 🔁 LOAD FROM HISTORY */
   useEffect(() => {
     if (selectedHistory) {
       setAtsScore(selectedHistory.ats_score);
       setMissingSkills(selectedHistory.missing_skills || []);
       setFeedback(selectedHistory.feedback || []);
+      setRoadmap(selectedHistory.roadmap || []);
     }
   }, [selectedHistory]);
 
@@ -53,6 +54,8 @@ export default function ResumeUploader({ selectedHistory }) {
       alert("Please login again");
       return;
     }
+
+    let analysisSucceeded = false; // ✅ local success flag
 
     try {
       setLoading(true);
@@ -110,27 +113,36 @@ export default function ResumeUploader({ selectedHistory }) {
           : "Strong skill match",
       ]);
 
-      /* 7️⃣ SAVE HISTORY (ONCE, CORRECTLY) */
+      /* 7️⃣ SAVE HISTORY */
       await saveHistory(user.uid, {
         ats_score: ats.ats_score,
         missing_skills: gap.missing_skills,
         roadmap: roadmapRes.learning_roadmap,
+        feedback: [
+          ats.ats_score < 60
+            ? "Improve keyword alignment"
+            : "Good ATS compatibility",
+          gap.missing_skills.length > 0
+            ? "Learn missing skills"
+            : "Strong skill match",
+        ],
       });
 
+      analysisSucceeded = true; // ✅ success confirmed
     } catch (err) {
-  console.error("Analysis error:", err);
+      console.error("Analysis error:", err);
 
-  // ❗ Show error ONLY if ATS score was never set
-  if (atsScore === null) {
-    alert(
-      "Analysis failed.\n\n" +
-      "• Resume text could not be parsed\n" +
-      "• Please upload a valid PDF/DOCX\n" +
-      "• Ensure job description is not empty"
-    );
-  }
-}
-
+      if (!analysisSucceeded) {
+        alert(
+          "Analysis failed.\n\n" +
+            "• Resume text could not be parsed\n" +
+            "• Please upload a valid PDF/DOCX\n" +
+            "• Ensure job description is not empty"
+        );
+      }
+    } finally {
+      setLoading(false);
+    }
   }
 
   /* ---------------- PDF ---------------- */
