@@ -1,89 +1,102 @@
 import { useState } from "react";
-import { createUserWithEmailAndPassword, signInWithPopup } from "firebase/auth";
+import {
+  createUserWithEmailAndPassword,
+  signInWithPopup
+} from "firebase/auth";
 import { auth, googleProvider } from "../firebase";
-import { saveUserProfile } from "../utils/saveUserProfile";
-
+import { Eye, EyeOff } from "lucide-react";
 
 export default function Signup({ onSwitch, onSuccess }) {
-  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState("");
 
   async function handleSignup() {
-  try {
-    const res = await createUserWithEmailAndPassword(auth, email, password);
-    await saveUserProfile(res.user, { name });
-    onSuccess();
-  } catch {
-    setError("Signup failed");
+    try {
+      await createUserWithEmailAndPassword(auth, email, password);
+      onSuccess();
+    } catch {
+      setError("Signup failed");
+    }
   }
-}
 
-async function handleGoogle() {
-  try {
-    const res = await signInWithPopup(auth, googleProvider);
-    await saveUserProfile(res.user);
-    onSuccess();
-  } catch {
-    setError("Google signup failed");
+  async function handleGoogleSignup() {
+    try {
+      await signInWithPopup(auth, googleProvider);
+      onSuccess();
+    } catch {
+      setError("Google signup failed");
+    }
   }
-}
-
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-black text-white">
-      <div className="bg-white/10 backdrop-blur-xl p-10 rounded-3xl w-full max-w-md border border-white/10">
+    <div className="min-h-screen flex items-center justify-center
+                    bg-gradient-to-br from-gray-900 to-black text-white">
 
-        <h2 className="text-3xl font-bold text-center mb-6">
+      <div className="bg-white/10 backdrop-blur-xl
+                      border border-white/10 rounded-3xl p-10 w-full max-w-md">
+
+        <h2 className="text-3xl font-bold mb-6 text-center">
           Create Account
         </h2>
 
-        <input
-          className="w-full mb-4 px-4 py-3 rounded-xl bg-black/40 border border-white/10"
-          placeholder="Full Name"
-          value={name}
-          onChange={e => setName(e.target.value)}
-        />
+        {error && (
+          <p className="text-red-400 text-sm mb-4">{error}</p>
+        )}
 
         <input
-          className="w-full mb-4 px-4 py-3 rounded-xl bg-black/40 border border-white/10"
+          type="email"
           placeholder="Email"
           value={email}
-          onChange={e => setEmail(e.target.value)}
+          onChange={(e) => setEmail(e.target.value)}
+          className="w-full mb-4 px-4 py-3 rounded-xl
+                     bg-black/40 border border-white/10 outline-none"
         />
 
-        <input
-          type="password"
-          className="w-full mb-4 px-4 py-3 rounded-xl bg-black/40 border border-white/10"
-          placeholder="Password"
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-        />
+        {/* PASSWORD WITH EYE */}
+        <div className="relative mb-6">
+          <input
+            type={showPass ? "text" : "password"}
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full px-4 py-3 rounded-xl
+                       bg-black/40 border border-white/10 outline-none"
+          />
 
-        {error && <p className="text-red-400 text-sm mb-3">{error}</p>}
+          <button
+            type="button"
+            onClick={() => setShowPass(!showPass)}
+            className="absolute right-4 top-3 text-gray-400 hover:text-white"
+          >
+            {showPass ? <EyeOff size={20} /> : <Eye size={20} />}
+          </button>
+        </div>
 
         <button
           onClick={handleSignup}
-          className="w-full bg-purple-500 py-3 rounded-xl font-semibold hover:bg-purple-600"
+          className="w-full bg-purple-500 hover:bg-purple-600
+                     py-3 rounded-xl font-semibold"
         >
           Sign Up
         </button>
 
         <button
-          onClick={handleGoogle}
-          className="w-full mt-4 bg-white text-black py-3 rounded-xl font-semibold"
+          onClick={handleGoogleSignup}
+          className="w-full mt-4 bg-white text-black
+                     py-3 rounded-xl font-semibold"
         >
           Sign up with Google
         </button>
 
-        <p className="text-center text-gray-400 mt-6">
+        <p className="text-sm text-gray-400 mt-6 text-center">
           Already have an account?{" "}
           <span
             onClick={onSwitch}
             className="text-purple-400 cursor-pointer"
           >
-            Log in
+            Login
           </span>
         </p>
       </div>

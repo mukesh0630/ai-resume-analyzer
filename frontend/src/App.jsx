@@ -49,14 +49,17 @@ export default function App() {
       <main className="flex-1 p-8 overflow-y-auto">
         {page === "dashboard" && <DashboardHome />}
         {page === "analyze" && (
-          <ResumeUploader selectedHistory={selectedHistory} />
-        )}
+  <ResumeUploader selectedHistory={selectedHistory} />
+)}
+
         {page === "history" && (
-          <History
-            onSelect={setSelectedHistory}
-            goAnalyze={() => setPage("analyze")}
-          />
-        )}
+  <History
+    onSelect={(item) => {
+      setSelectedHistory(item);
+      setPage("analyze");
+    }}
+  />
+)}
         {page === "profile" && <Profile />}
       </main>
     </div>

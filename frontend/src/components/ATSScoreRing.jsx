@@ -1,65 +1,74 @@
 import { useEffect, useState } from "react";
 
-export default function ATSScoreRing({ score = 0, size = 140 }) {
-  const strokeWidth = 10;
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
+export default function ATSScoreRing({ score }) {
+  const radius = 60;
+  const stroke = 10;
+  const normalizedRadius = radius - stroke * 2;
+  const circumference = normalizedRadius * 2 * Math.PI;
 
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     let start = 0;
-    const end = Math.min(Math.max(score, 0), 100);
-
     const interval = setInterval(() => {
-      start += 1;
-      setProgress(start);
-      if (start >= end) clearInterval(interval);
-    }, 15);
-
+      if (start >= score) {
+        clearInterval(interval);
+      } else {
+        start += 1;
+        setProgress(start);
+      }
+    }, 12);
     return () => clearInterval(interval);
   }, [score]);
 
-  const offset =
+  const strokeDashoffset =
     circumference - (progress / 100) * circumference;
 
-  return (
-    <div className="flex flex-col items-center justify-center">
-      <svg width={size} height={size} className="rotate-[-90deg]">
-        {/* Background Ring */}
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke="#1f2937"
-          strokeWidth={strokeWidth}
-          fill="transparent"
-        />
+  const color =
+    progress < 40 ? "#ef4444" :
+    progress < 70 ? "#facc15" :
+    "#22c55e";
 
-        {/* Progress Ring */}
+  return (
+    <div className="flex flex-col items-center">
+      <svg height={radius * 2} width={radius * 2}>
         <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke="#3b82f6"
-          strokeWidth={strokeWidth}
+          stroke="#1f2937"
           fill="transparent"
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          strokeLinecap="round"
-          style={{ transition: "stroke-dashoffset 0.3s ease" }}
+          strokeWidth={stroke}
+          r={normalizedRadius}
+          cx={radius}
+          cy={radius}
         />
+        <circle
+          stroke={color}
+          fill="transparent"
+          strokeWidth={stroke}
+          strokeDasharray={`${circumference} ${circumference}`}
+          style={{
+            strokeDashoffset,
+            transition: "stroke-dashoffset 0.4s ease",
+            filter: "drop-shadow(0 0 6px rgba(34,197,94,0.6))"
+          }}
+          strokeLinecap="round"
+          r={normalizedRadius}
+          cx={radius}
+          cy={radius}
+        />
+        <text
+          x="50%"
+          y="50%"
+          textAnchor="middle"
+          dy=".3em"
+          className="fill-white text-xl font-bold"
+        >
+          {progress}%
+        </text>
       </svg>
 
-      {/* Score Text */}
-      <div className="absolute text-center">
-        <p className="text-3xl font-bold text-white">
-          {progress}%
-        </p>
-        <p className="text-sm text-gray-400 mt-1">
-          ATS Score
-        </p>
-      </div>
+      <p className="mt-3 text-gray-300 text-sm tracking-wide">
+        ATS Score
+      </p>
     </div>
   );
 }

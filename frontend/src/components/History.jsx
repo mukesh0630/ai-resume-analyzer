@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { fetchHistory } from "../api";
 import { auth } from "../firebase";
 
-export default function History({ onSelect, goAnalyze }) {
+export default function History({ onSelect,}) {
   const [history, setHistory] = useState([]);
 
   useEffect(() => {
@@ -41,11 +41,9 @@ export default function History({ onSelect, goAnalyze }) {
           return (
             <div
               key={index}
-              onClick={() => {
-                if (onSelect) onSelect(item);
-                if (goAnalyze) goAnalyze();
-              }}
-              className="bg-white/10 backdrop-blur-xl border border-white/10 rounded-2xl p-6 cursor-pointer hover:border-purple-400 transition"
+              onClick={() => onSelect(item)}
+              className="bg-white/10 backdrop-blur-xl border border-white/10
+             rounded-2xl p-6 cursor-pointer hover:border-purple-400 transition"
             >
               <div className="flex justify-between items-center">
                 <h3 className="text-xl font-semibold">

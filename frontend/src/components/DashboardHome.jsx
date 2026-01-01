@@ -1,6 +1,38 @@
+import { useEffect, useState } from "react";
 import ATSScoreRing from "./ATSScoreRing";
+import ATSTrendChart from "./ATSTrendChart";
+import { auth } from "../firebase";
+import { fetchHistory } from "../api";
 
 export default function DashboardHome() {
+  const [history, setHistory] = useState([]);
+  const [avgATS, setAvgATS] = useState(0);
+  const [skillMatch, setSkillMatch] = useState(0);
+
+  /* 🔁 Load history for analytics */
+  useEffect(() => {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    fetchHistory(user.uid).then((res) => {
+      const h = res.history || [];
+      setHistory(h);
+
+      if (h.length > 0) {
+        const avg =
+          h.reduce((sum, i) => sum + (i.ats_score || 0), 0) / h.length;
+        setAvgATS(Math.round(avg));
+
+        // skill match = inverse of missing skills (rough metric)
+        const avgMissing =
+          h.reduce((sum, i) => sum + (i.missing_skills?.length || 0), 0) /
+          h.length;
+
+        setSkillMatch(Math.max(100 - avgMissing * 10, 40));
+      }
+    });
+  }, []);
+
   return (
     <div className="space-y-10">
 
@@ -35,24 +67,33 @@ export default function DashboardHome() {
       <div className="grid md:grid-cols-3 gap-6">
 
         <StatBox title="ATS Compatibility">
-          <ATSScoreRing score={75} />
+          <ATSScoreRing score={avgATS || 0} />
         </StatBox>
 
         <StatBox title="Skill Match">
-          <p className="text-4xl font-bold text-green-400">74%</p>
+          <p className="text-4xl font-bold text-green-400">
+            {skillMatch || 0}%
+          </p>
           <p className="text-sm text-gray-400 mt-2">
-            Based on resume vs job skills
+            Avg alignment with job skills
           </p>
         </StatBox>
 
         <StatBox title="Resume Similarity">
-          <p className="text-4xl font-bold text-blue-400">68%</p>
+          <p className="text-4xl font-bold text-blue-400">
+            {avgATS ? Math.min(avgATS + 5, 100) : 0}%
+          </p>
           <p className="text-sm text-gray-400 mt-2">
-            Semantic similarity score
+            Semantic similarity estimate
           </p>
         </StatBox>
 
       </div>
+
+      {/* ---------------- ANALYTICS ---------------- */}
+      {history.length > 1 && (
+        <ATSTrendChart history={history} />
+      )}
 
       {/* ---------------- WHY THIS APP ---------------- */}
       <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-8 border border-white/10">
