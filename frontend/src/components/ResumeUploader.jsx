@@ -4,13 +4,13 @@ import SkillGapChart from "./SkillGapChart";
 import AIChat from "./AIChat";
 import SkillRadarChart from "./SkillRadarChart";
 import { auth } from "../firebase";
+import { saveAnalysisHistory } from "../api/firestore";
 
 import {
   getATSScore,
   getSkillGap,
   getLearningRoadmap,
   askResumeAI,
-  saveHistory,
   downloadPDFReport,
 } from "../api";
 
@@ -116,19 +116,20 @@ export default function ResumeUploader({ selectedHistory }) {
       ]);
 
       /* 7️⃣ SAVE HISTORY */
-      await saveHistory(user.uid, {
-        ats_score: ats.ats_score,
-        missing_skills: gap.missing_skills,
-        roadmap: roadmapRes.learning_roadmap,
-        feedback: [
-          ats.ats_score < 60
-            ? "Improve keyword alignment"
-            : "Good ATS compatibility",
-          gap.missing_skills.length > 0
-            ? "Learn missing skills"
-            : "Strong skill match",
-        ],
-      });
+      await saveAnalysisHistory(user.uid, {
+  ats_score: ats.ats_score,
+  missing_skills: gap.missing_skills,
+  roadmap: roadmapRes.learning_roadmap,
+  feedback: [
+    ats.ats_score < 60
+      ? "Improve keyword alignment"
+      : "Good ATS compatibility",
+    gap.missing_skills.length
+      ? "Learn missing skills"
+      : "Strong skill match",
+  ],
+});
+
 
     } catch (err) {
       console.error("Analysis error:", err);

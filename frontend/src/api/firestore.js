@@ -6,12 +6,13 @@ import {
 } from "firebase/firestore";
 
 export async function saveAnalysisHistory(uid, data) {
-  if (!uid) throw new Error("User not authenticated");
+  if (!uid) return;
 
-  const ref = collection(db, "users", uid, "history");
-
-  await addDoc(ref, {
-    ...data,
-    created_at: serverTimestamp(),
-  });
+  await addDoc(
+    collection(db, "users", uid, "history"),
+    {
+      ...data,
+      created_at: serverTimestamp(),
+    }
+);
 }
