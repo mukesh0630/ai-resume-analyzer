@@ -98,13 +98,13 @@ ai-resume-analyzer/
 
 ```
 FIREBASE_SERVICE_ACCOUNT=<Firebase service account JSON>
-GROQ_API_KEY=<Groq API Key>
+GEMINI_API_KEY=<Gemini API Key>
 ```
 
 ### Frontend
 
 ```
-VITE_API_BASE_URL=https://your-backend.onrender.com
+VITE_API_BASE_URL=https://ai-resume-analyzer-0bi6.onrender.com
 ```
 
 ---
@@ -135,8 +135,8 @@ npm run dev
 
 ## 🌐 Live Demo
 
-* **Frontend:** Firebase Hosting URL
-* **Backend:** Render URL
+* **Frontend:** https://ai-resume-analyzer-ea4bd.web.app
+* **Backend:** https://ai-resume-analyzer-0bi6.onrender.com
 
 ---
 
