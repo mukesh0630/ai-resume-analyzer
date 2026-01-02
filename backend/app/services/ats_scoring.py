@@ -1,4 +1,3 @@
-import re
 from backend.app.services.skill_gap import extract_skills
 
 SECTION_KEYWORDS = [
@@ -13,26 +12,22 @@ def calculate_ats_score(resume_text: str, job_text: str):
     resume = resume_text.lower()
     job = job_text.lower()
 
-    # extract_skills now returns LIST → convert to SET
-    resume_skills = set(extract_skills(resume))
-    job_skills = set(extract_skills(job))
+    resume_skills = extract_skills(resume)
+    job_skills = extract_skills(job)
 
     if not job_skills:
-        return {
-            "ats_score": 0,
-            "matched_skills": [],
-            "missing_skills": []
-        }
+        return {"ats_score": 0, "matched_skills": [], "missing_skills": []}
 
-    # 1️⃣ Keyword Match Ratio (40%)
     matched = resume_skills & job_skills
-    match_ratio = len(matched) / len(job_skills)
-    keyword_score = match_ratio * 40
 
-    # 2️⃣ Keyword Frequency (20%)
+    # 🔥 1️⃣ SKILL MATCH (60%)
+    skill_match_ratio = len(matched) / len(job_skills)
+    skill_score = skill_match_ratio * 60
+
+    # 🔥 2️⃣ KEYWORD FREQUENCY (20%) — VARIANT-AWARE
     freq_score = 0
     for skill in job_skills:
-        freq = resume.count(skill)
+        freq = sum(resume.count(v) for v in skill.split())
         if freq >= 3:
             freq_score += 2
         elif freq == 2:
@@ -41,27 +36,23 @@ def calculate_ats_score(resume_text: str, job_text: str):
             freq_score += 1
     freq_score = min(freq_score, 20)
 
-    # 3️⃣ Section Presence (15%)
+    # 🔹 3️⃣ SECTION PRESENCE (10%)
     section_hits = sum(1 for s in SECTION_KEYWORDS if s in resume)
-    section_score = min((section_hits / len(SECTION_KEYWORDS)) * 15, 15)
+    section_score = (section_hits / len(SECTION_KEYWORDS)) * 10
 
-    # 4️⃣ Skill Coverage (15%)
-    coverage_score = (len(matched) / max(len(resume_skills), 1)) * 15
-
-    # 5️⃣ Resume Length Quality (10%)
+    # 🔹 4️⃣ RESUME LENGTH (10%)
     word_count = len(resume.split())
     if word_count < 150:
-        length_score = 2
+        length_score = 4
     elif word_count < 300:
-        length_score = 6
+        length_score = 7
     else:
         length_score = 10
 
     total_score = (
-        keyword_score +
+        skill_score +
         freq_score +
         section_score +
-        coverage_score +
         length_score
     )
 

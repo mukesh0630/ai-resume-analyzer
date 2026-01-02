@@ -143,41 +143,27 @@ SKILL_KEYWORDS = {
 
 }
 
-
-
-def normalize_text(text: str) -> str:
-    """
-    Normalize resume/job text to avoid parsing issues
-    """
+def extract_skills(text: str):
     text = text.lower()
-    text = re.sub(r"[^a-z0-9\s.+]", " ", text)  # remove bullets/symbols
-    text = re.sub(r"\s+", " ", text)            # normalize spacing
-    return text
-
-
-def extract_skills(text: str) -> List[str]:
-    text = normalize_text(text)
     found = set()
 
     for skill, variants in SKILL_KEYWORDS.items():
         for v in variants:
-            if v in text:
+            if re.search(rf"\b{re.escape(v)}\b", text):
                 found.add(skill)
                 break
 
-    return sorted(found)
+    return found
 
 
-def calculate_skill_gap(resume_text: str, job_text: str) -> Dict:
-    resume_skills = set(extract_skills(resume_text))
-    job_skills = set(extract_skills(job_text))
+def calculate_skill_gap(resume_text: str, job_text: str):
+    resume_skills = extract_skills(resume_text)
+    job_skills = extract_skills(job_text)
 
     matched = sorted(resume_skills & job_skills)
     missing = sorted(job_skills - resume_skills)
 
     return {
         "matched_skills": matched,
-        "missing_skills": missing,
-        "resume_skills": sorted(resume_skills),
-        "job_skills": sorted(job_skills),
+        "missing_skills": missing
     }
