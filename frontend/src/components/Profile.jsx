@@ -1,34 +1,49 @@
 import { useEffect, useState } from "react";
-import { auth } from "../firebase";
 import { fetchHistory } from "../api";
 
-export default function Profile() {
-  const user = auth.currentUser;
+export default function Profile({ user }) {
   const [history, setHistory] = useState([]);
   const [avgATS, setAvgATS] = useState(0);
   const [level, setLevel] = useState("Beginner");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-  if (!user) return;
-
-  fetchHistory(user.uid).then((res) => {
-    const h = res.history || [];
-    setHistory(h);
-
-    if (h.length > 0) {
-      const validScores = h
-        .map(i => Number(i.ats_score))
-        .filter(s => !isNaN(s));
-
-      if (validScores.length) {
-        const avg =
-          validScores.reduce((a, b) => a + b, 0) / validScores.length;
-        setAvgATS(Math.round(avg));
-      }
+    let mounted = true;
+    if (!user) {
+      setLoading(false);
+      return;
     }
-  });
-}, [user]);
+
+    setLoading(true);
+    fetchHistory(user.uid)
+      .then((res) => {
+        if (!mounted) return;
+        const h = res.history || [];
+        setHistory(h);
+
+        if (h.length > 0) {
+          const validScores = h
+            .map((i) => Number(i.ats_score))
+            .filter((s) => !isNaN(s));
+
+          if (validScores.length) {
+            const avg =
+              validScores.reduce((a, b) => a + b, 0) / validScores.length;
+            setAvgATS(Math.round(avg));
+          }
+        }
+      })
+      .catch((err) => {
+        console.error("fetchHistory error:", err);
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [user]);
 
 
 

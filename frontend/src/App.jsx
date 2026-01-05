@@ -60,7 +60,7 @@ export default function App() {
     }}
   />
 )}
-        {page === "profile" && <Profile />}
+        {page === "profile" && <Profile user={user} />}
       </main>
     </div>
   );
