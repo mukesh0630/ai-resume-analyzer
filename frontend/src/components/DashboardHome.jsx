@@ -14,23 +14,45 @@ export default function DashboardHome() {
     const user = auth.currentUser;
     if (!user) return;
 
-    fetchHistory(user.uid).then((res) => {
-      const h = res.history || [];
-      setHistory(h);
+    fetchHistory(user.uid)
+      .then((res) => {
+        const h = Array.isArray(res.history) ? res.history : [];
+        setHistory(h);
 
-      if (h.length > 0) {
+        if (h.length === 0) {
+          setAvgATS(0);
+          setSkillMatch(0);
+          return;
+        }
+
+        /* ---------- AVG ATS ---------- */
+        const atsScores = h
+          .map((i) => Number(i.ats_score))
+          .filter((v) => !isNaN(v));
+
         const avg =
-          h.reduce((sum, i) => sum + (i.ats_score || 0), 0) / h.length;
+          atsScores.length > 0
+            ? atsScores.reduce((a, b) => a + b, 0) / atsScores.length
+            : 0;
+
         setAvgATS(Math.round(avg));
 
-        // skill match = inverse of missing skills (rough metric)
+        /* ---------- SKILL MATCH ---------- */
         const avgMissing =
-          h.reduce((sum, i) => sum + (i.missing_skills?.length || 0), 0) /
-          h.length;
+          h.reduce(
+            (sum, i) => sum + (Array.isArray(i.missing_skills) ? i.missing_skills.length : 0),
+            0
+          ) / h.length;
 
-        setSkillMatch(Math.max(100 - avgMissing * 10, 40));
-      }
-    });
+        const matchScore = Math.max(100 - avgMissing * 10, 40);
+        setSkillMatch(Math.round(matchScore));
+      })
+      .catch((err) => {
+        console.error("Dashboard history error:", err);
+        setHistory([]);
+        setAvgATS(0);
+        setSkillMatch(0);
+      });
   }, []);
 
   return (
@@ -67,12 +89,12 @@ export default function DashboardHome() {
       <div className="grid md:grid-cols-3 gap-6">
 
         <StatBox title="ATS Compatibility">
-          <ATSScoreRing score={avgATS || 0} />
+          <ATSScoreRing score={avgATS} />
         </StatBox>
 
         <StatBox title="Skill Match">
           <p className="text-4xl font-bold text-green-400">
-            {skillMatch || 0}%
+            {skillMatch}%
           </p>
           <p className="text-sm text-gray-400 mt-2">
             Avg alignment with job skills
