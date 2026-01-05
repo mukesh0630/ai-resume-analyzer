@@ -69,17 +69,28 @@ export default function History({ onSelect,}) {
               </div>
 
               <p className="mt-3 text-gray-300">
-                Missing Skills:
-                {item.missing_skills?.length > 0
-                  ? ` ${item.missing_skills.join(", ")}`
-                  : " None 🎉"}
-              </p>
+  Missing Skills:
+  {Array.isArray(item.missing_skills) && item.missing_skills.length > 0
+    ? ` ${item.missing_skills.join(", ")}`
+    : " None 🎉"}
+</p>
 
-              <ul className="mt-3 list-disc ml-5 text-gray-400 text-sm">
-                {item.feedback?.map((f, i) => (
-                  <li key={i}>{f}</li>
-                ))}
-              </ul>
+{Array.isArray(item.roadmap) && item.roadmap.length > 0 && (
+  <ul className="mt-2 text-sm text-gray-400 list-disc ml-5">
+    {item.roadmap.slice(0, 3).map((r, i) => (
+      <li key={i}>{r.recommendation || r}</li>
+    ))}
+  </ul>
+)}
+
+{Array.isArray(item.feedback) && item.feedback.length > 0 && (
+  <ul className="mt-2 text-sm text-gray-400 list-disc ml-5">
+    {item.feedback.map((f, i) => (
+      <li key={i}>{f}</li>
+    ))}
+  </ul>
+)}
+
             </div>
           );
         })}

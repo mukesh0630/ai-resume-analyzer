@@ -35,12 +35,14 @@ export default function ResumeUploader({ selectedHistory }) {
     }
   }, [selectedHistory]);
 
+  /* ---------------- RESUME UPLOAD ---------------- */
   function handleResumeUpload(e) {
     const selected = e.target.files[0];
     if (!selected) return;
     setFile(selected);
   }
 
+  /* ---------------- ANALYZE ---------------- */
   async function analyzeResume() {
     if (!file || !jobDesc.trim()) {
       alert("Please upload a resume and paste job description.");
@@ -53,7 +55,7 @@ export default function ResumeUploader({ selectedHistory }) {
       return;
     }
 
-    let atsReceived = false;
+    let analysisSucceeded = false; // ✅ SINGLE success flag
 
     try {
       setLoading(true);
@@ -81,67 +83,70 @@ export default function ResumeUploader({ selectedHistory }) {
 
       setResumeText(parsedText);
 
-      /* 2️⃣ ATS SCORE (CRITICAL) */
+      /* 2️⃣ ATS SCORE */
       const ats = await getATSScore(parsedText, jobDesc);
       setAtsScore(ats.ats_score);
-      atsReceived = true;
+
+      analysisSucceeded = true; // ✅ SUCCESS CONFIRMED HERE
 
       /* 3️⃣ SKILL GAP */
       const gap = await getSkillGap(parsedText, jobDesc);
       setMissingSkills(gap.missing_skills || []);
 
       /* 4️⃣ ROADMAP */
+      const roadmapRes = await getLearningRoadmap(gap.missing_skills || []);
+      setRoadmap(roadmapRes.learning_roadmap || []);
+
+      /* 5️⃣ AI INSIGHTS (optional) */
       try {
-        const roadmapRes = await getLearningRoadmap(gap.missing_skills || []);
-        setRoadmap(roadmapRes.learning_roadmap || []);
+        const ai = await askResumeAI(parsedText, jobDesc, gap.missing_skills);
+        setAiResponse(ai.ai_response);
       } catch {
-        setRoadmap([]);
+        console.warn("AI assistant failed");
       }
 
-      /* 5️⃣ AI (NON-BLOCKING) */
-      setTimeout(async () => {
-        try {
-          const ai = await askResumeAI(parsedText, jobDesc, gap.missing_skills);
-          setAiResponse(ai.ai_response);
-        } catch {
-          console.warn("AI skipped");
-        }
-      }, 0);
-
-      /* 6️⃣ FEEDBACK */
+      /* 6️⃣ QUICK FEEDBACK */
       setFeedback([
         ats.ats_score < 60
           ? "Improve keyword alignment with job description"
           : "Good ATS compatibility",
-        gap.missing_skills.length
+        gap.missing_skills.length > 0
           ? "Consider learning missing skills"
           : "Strong skill match",
       ]);
 
-      /* 7️⃣ SAVE HISTORY (NEVER BLOCK UI) */
-      saveAnalysisHistory(user.uid, {
-        ats_score: ats.ats_score,
-        missing_skills: gap.missing_skills,
-        roadmap: [],
-        feedback: [
-          ats.ats_score < 60
-            ? "Improve keyword alignment"
-            : "Good ATS compatibility",
-          gap.missing_skills.length
-            ? "Learn missing skills"
-            : "Strong skill match",
-        ],
-      }).catch(() => console.warn("History save failed"));
+      /* 7️⃣ SAVE HISTORY */
+      await saveAnalysisHistory(user.uid, {
+  ats_score: Number(ats.ats_score),
+  missing_skills: Array.isArray(gap.missing_skills)
+    ? gap.missing_skills
+    : [],
+  roadmap: Array.isArray(roadmapRes.learning_roadmap)
+    ? roadmapRes.learning_roadmap
+    : [],
+  feedback: [
+    ats.ats_score < 60
+      ? "Improve keyword alignment"
+      : "Good ATS compatibility",
+    gap.missing_skills.length
+      ? "Learn missing skills"
+      : "Strong skill match"
+  ],
+  created_at: new Date()
+});
+
+
 
     } catch (err) {
       console.error("Analysis error:", err);
 
-      if (!atsReceived) {
+      // ❌ popup ONLY if ATS never succeeded
+      if (!analysisSucceeded) {
         alert(
           "Analysis failed.\n\n" +
-          "• Resume parsing failed\n" +
-          "• Invalid PDF/DOCX\n" +
-          "• Empty job description"
+          "• Resume text could not be parsed\n" +
+          "• Please upload a valid PDF/DOCX\n" +
+          "• Ensure job description is not empty"
         );
       }
     } finally {
@@ -149,6 +154,7 @@ export default function ResumeUploader({ selectedHistory }) {
     }
   }
 
+  /* ---------------- PDF ---------------- */
   async function handleDownload() {
     const blob = await downloadPDFReport({
       ats_score: atsScore,
@@ -164,6 +170,7 @@ export default function ResumeUploader({ selectedHistory }) {
     a.click();
   }
 
+  /* ---------------- UI ---------------- */
   return (
     <div className="max-w-5xl mx-auto space-y-8">
       <h1 className="text-4xl font-bold text-purple-400">
@@ -171,17 +178,24 @@ export default function ResumeUploader({ selectedHistory }) {
       </h1>
 
       <div className="bg-white/10 p-6 rounded-2xl border border-white/10">
-        <input type="file" accept=".pdf,.docx" onChange={handleResumeUpload} />
+        <input
+          type="file"
+          accept=".pdf,.docx"
+          onChange={handleResumeUpload}
+          className="mb-4"
+        />
+
         <textarea
           placeholder="Paste Job Description here..."
           value={jobDesc}
           onChange={(e) => setJobDesc(e.target.value)}
-          className="w-full h-32 mt-4 p-4 rounded-xl bg-black/40"
+          className="w-full h-32 p-4 rounded-xl bg-black/40 border border-white/10"
         />
+
         <button
           onClick={analyzeResume}
           disabled={loading}
-          className="mt-4 bg-purple-500 px-6 py-3 rounded-xl"
+          className="mt-4 bg-purple-500 hover:bg-purple-600 px-6 py-3 rounded-xl font-semibold"
         >
           {loading ? "Analyzing..." : "Analyze Resume"}
         </button>
@@ -189,17 +203,46 @@ export default function ResumeUploader({ selectedHistory }) {
 
       {atsScore !== null && (
         <>
-          <ATSScoreRing score={Math.round(atsScore)} />
+          <div className="grid md:grid-cols-3 gap-6">
+            <div className="bg-white/10 p-6 rounded-xl flex justify-center">
+              <ATSScoreRing score={Math.round(atsScore)} />
+            </div>
+
+            <div className="bg-white/10 p-6 rounded-xl">
+              <h3 className="font-semibold mb-2">Missing Skills</h3>
+              <ul className="text-sm text-gray-300">
+                {missingSkills.map((s, i) => (
+                  <li key={i}>• {s}</li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="bg-white/10 p-6 rounded-xl">
+              <h3 className="font-semibold mb-2">Learning Roadmap</h3>
+              <ul className="text-sm text-gray-300">
+                {roadmap.slice(0, 6).map((r, i) => (
+                  <li key={i}>• {r.recommendation}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
           <SkillGapChart skills={missingSkills} />
+          <SkillRadarChart
+            matchedSkills={roadmap.map((r) => r.skill)}
+            missingSkills={missingSkills}
+          />
+
           <AIChat
             resumeText={resumeText}
             jobDesc={jobDesc}
             missingSkills={missingSkills}
             atsScore={atsScore}
           />
+
           <button
             onClick={handleDownload}
-            className="bg-green-500 px-6 py-3 rounded-xl"
+            className="bg-green-500 hover:bg-green-600 px-6 py-3 rounded-xl font-semibold"
           >
             Download PDF Report
           </button>
