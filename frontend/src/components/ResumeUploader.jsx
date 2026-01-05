@@ -121,10 +121,6 @@ export default function ResumeUploader({ selectedHistory }) {
       /* 7️⃣ SAVE HISTORY (NEVER BLOCK UI) */
       saveAnalysisHistory(user.uid, {
         ats_score: ats.ats_score,
-  similarity: Math.round(
-    ((ats.matched_skills?.length || 0) /
-      Math.max(1, gap.missing_skills.length + (ats.matched_skills?.length || 0))) * 100
-  ),
         missing_skills: gap.missing_skills,
         roadmap: [],
         feedback: [
