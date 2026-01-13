@@ -4,7 +4,7 @@
 const BASE_URL = "https://ai-resume-analyzer-0bi6.onrender.com";
 
 // ===============================
-// ATS SCORE
+// ATS SCORE (RULE-BASED - KEEP)
 // ===============================
 export async function getATSScore(resumeText, jobDescription) {
   const response = await fetch(`${BASE_URL}/ats/score`, {
@@ -22,11 +22,11 @@ export async function getATSScore(resumeText, jobDescription) {
     throw new Error("Failed to fetch ATS score");
   }
 
-  return response.json(); // { ats_score: number }
+  return response.json();
 }
 
 // ===============================
-// SKILL GAP
+// SKILL GAP (RULE-BASED - KEEP)
 // ===============================
 export async function getSkillGap(resumeText, jobDescription) {
   const response = await fetch(`${BASE_URL}/ats/skills`, {
@@ -44,12 +44,11 @@ export async function getSkillGap(resumeText, jobDescription) {
     throw new Error("Failed to fetch skill gap");
   }
 
-  return response.json(); 
-  // { matched_skills: [], missing_skills: [] }
+  return response.json();
 }
 
 // ===============================
-// LEARNING ROADMAP (AI / RULE)
+// LEARNING ROADMAP (RULE-BASED)
 // ===============================
 export async function getLearningRoadmap(missingSkills) {
   const response = await fetch(`${BASE_URL}/ats/roadmap`, {
@@ -66,22 +65,22 @@ export async function getLearningRoadmap(missingSkills) {
     throw new Error("Failed to fetch learning roadmap");
   }
 
-  return response.json(); 
-  // { learning_roadmap: [] }
+  return response.json();
 }
 
+// ===============================
+// FEEDBACK (KEEP)
+// ===============================
 export async function getFeedback(atsScore, missingSkills) {
-  const res = await fetch(
-    "https://ai-resume-analyzer-0bi6.onrender.com/feedback",
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ats_score: atsScore,
-        missing_skills: missingSkills
-      })
-    }
-  );
+  const res = await fetch(`${BASE_URL}/feedback`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      ats_score: atsScore,
+      missing_skills: missingSkills,
+    }),
+  });
+
   if (!res.ok) {
     throw new Error("Feedback failed");
   }
@@ -90,7 +89,7 @@ export async function getFeedback(atsScore, missingSkills) {
 }
 
 // ===============================
-// AI ASSISTANT (SHORT INSIGHTS)
+// AI ASSISTANT (OLD - KEEP)
 // ===============================
 export async function askResumeAI(
   resumeText,
@@ -98,21 +97,18 @@ export async function askResumeAI(
   atsScore,
   missingSkills
 ) {
-  const response = await fetch(
-    "https://ai-resume-analyzer-0bi6.onrender.com/ai/assistant",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        resume_text: resumeText || "",
-        job_description: jobDescription || "",
-        ats_score: Number(atsScore) || 0,
-        missing_skills: Array.isArray(missingSkills) ? missingSkills : [],
-      }),
-    }
-  );
+  const response = await fetch(`${BASE_URL}/ai/assistant`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      resume_text: resumeText || "",
+      job_description: jobDescription || "",
+      ats_score: Number(atsScore) || 0,
+      missing_skills: Array.isArray(missingSkills) ? missingSkills : [],
+    }),
+  });
 
   if (!response.ok) {
     throw new Error("AI assistant failed");
@@ -121,6 +117,38 @@ export async function askResumeAI(
   return response.json();
 }
 
+// ===============================
+// ✅ AI-BASED FULL RESUME ANALYSIS (NEW)
+// ===============================
+export async function analyzeResumeAI(resumeText, jobDescription) {
+  const response = await fetch(`${BASE_URL}/ai/analyze`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      resume_text: resumeText,
+      job_description: jobDescription,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error("AI resume analysis failed");
+  }
+
+  return response.json();
+  /*
+    Expected response:
+    {
+      ats_score: number,
+      matched_skills: [],
+      missing_skills: [],
+      learning_roadmap: [],
+      feedback: [],
+      ai_response: string
+    }
+  */
+}
 
 // ===============================
 // PDF REPORT DOWNLOAD
@@ -171,10 +199,5 @@ export async function fetchHistory(userId) {
     throw new Error("Failed to fetch history");
   }
 
-  return response.json(); 
-  // { history: [] }
+  return response.json();
 }
-
-
-
-

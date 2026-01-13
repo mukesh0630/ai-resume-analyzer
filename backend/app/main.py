@@ -7,6 +7,8 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 import os
 import uuid
+from backend.app.routes import ai_ats
+
 
 # -----------------------------
 # Load Environment Variables
@@ -61,6 +63,7 @@ app.include_router(ai.router)
 app.include_router(protected.router)
 app.include_router(history.router)
 app.include_router(roadmap.router)
+app.include_router(ai_ats.router)
 
 # -----------------------------
 # Health Check

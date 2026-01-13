@@ -4,13 +4,10 @@ import SkillGapChart from "./SkillGapChart";
 import AIChat from "./AIChat";
 import SkillRadarChart from "./SkillRadarChart";
 import { auth } from "../firebase";
-import { saveAnalysisHistory } from "../api/firestore";
 
 import {
-  getATSScore,
-  getSkillGap,
-  getLearningRoadmap,
-  askResumeAI,
+  analyzeResumeAI,
+  saveHistory,
   downloadPDFReport,
 } from "../api";
 
@@ -28,10 +25,10 @@ export default function ResumeUploader({ selectedHistory }) {
   /* 🔁 LOAD FROM HISTORY */
   useEffect(() => {
     if (selectedHistory) {
-      setAtsScore(selectedHistory.ats_score);
+      setAtsScore(selectedHistory.ats_score || 0);
       setMissingSkills(selectedHistory.missing_skills || []);
-      setFeedback(selectedHistory.feedback || []);
       setRoadmap(selectedHistory.roadmap || []);
+      setFeedback(selectedHistory.feedback || []);
     }
   }, [selectedHistory]);
 
@@ -55,8 +52,6 @@ export default function ResumeUploader({ selectedHistory }) {
       return;
     }
 
-    let analysisSucceeded = false; // ✅ SINGLE success flag
-
     try {
       setLoading(true);
 
@@ -70,7 +65,6 @@ export default function ResumeUploader({ selectedHistory }) {
       );
 
       const uploadData = await uploadRes.json();
-
       const parsedText =
         uploadData.extracted_text ||
         uploadData.extracted_text_preview ||
@@ -83,72 +77,30 @@ export default function ResumeUploader({ selectedHistory }) {
 
       setResumeText(parsedText);
 
-      /* 2️⃣ ATS SCORE */
-      const ats = await getATSScore(parsedText, jobDesc);
-      setAtsScore(ats.ats_score);
+      /* 2️⃣ AI ANALYSIS (SINGLE CALL) */
+      const aiResult = await analyzeResumeAI(parsedText, jobDesc);
 
-      analysisSucceeded = true; // ✅ SUCCESS CONFIRMED HERE
+      setAtsScore(aiResult.ats_score || 0);
+      setMissingSkills(aiResult.missing_skills || []);
+      setRoadmap(aiResult.learning_roadmap || []);
+      setFeedback(aiResult.feedback || []);
+      setAiResponse(aiResult.ai_response || "");
 
-      /* 3️⃣ SKILL GAP */
-      const gap = await getSkillGap(parsedText, jobDesc);
-      setMissingSkills(gap.missing_skills || []);
-
-      /* 4️⃣ ROADMAP */
-      const roadmapRes = await getLearningRoadmap(gap.missing_skills || []);
-      setRoadmap(roadmapRes.learning_roadmap || []);
-
-      /* 5️⃣ AI INSIGHTS (optional) */
-      try {
-        const ai = await askResumeAI(parsedText, jobDesc, gap.missing_skills);
-        setAiResponse(ai.ai_response);
-      } catch {
-        console.warn("AI assistant failed");
-      }
-
-      /* 6️⃣ QUICK FEEDBACK */
-      setFeedback([
-        ats.ats_score < 60
-          ? "Improve keyword alignment with job description"
-          : "Good ATS compatibility",
-        gap.missing_skills.length > 0
-          ? "Consider learning missing skills"
-          : "Strong skill match",
-      ]);
-
-      /* 7️⃣ SAVE HISTORY */
-      await saveAnalysisHistory(user.uid, {
-  ats_score: Number(ats.ats_score),
-  missing_skills: Array.isArray(gap.missing_skills)
-    ? gap.missing_skills
-    : [],
-  roadmap: Array.isArray(roadmapRes.learning_roadmap)
-    ? roadmapRes.learning_roadmap
-    : [],
-  feedback: [
-    ats.ats_score < 60
-      ? "Improve keyword alignment"
-      : "Good ATS compatibility",
-    gap.missing_skills.length
-      ? "Learn missing skills"
-      : "Strong skill match"
-  ],
-  created_at: new Date()
-});
-
-
+      /* 3️⃣ SAVE HISTORY (BACKEND) */
+      await saveHistory(user.uid, {
+        ats_score: aiResult.ats_score,
+        missing_skills: aiResult.missing_skills,
+        roadmap: aiResult.learning_roadmap,
+        feedback: aiResult.feedback,
+      });
 
     } catch (err) {
       console.error("Analysis error:", err);
-
-      // ❌ popup ONLY if ATS never succeeded
-      if (!analysisSucceeded) {
-        alert(
-          "Analysis failed.\n\n" +
-          "• Resume text could not be parsed\n" +
-          "• Please upload a valid PDF/DOCX\n" +
-          "• Ensure job description is not empty"
-        );
-      }
+      alert(
+        "Analysis failed.\n\n" +
+        "• Please upload a valid PDF/DOCX\n" +
+        "• Ensure job description is not empty"
+      );
     } finally {
       setLoading(false);
     }
@@ -228,6 +180,7 @@ export default function ResumeUploader({ selectedHistory }) {
           </div>
 
           <SkillGapChart skills={missingSkills} />
+
           <SkillRadarChart
             matchedSkills={roadmap.map((r) => r.skill)}
             missingSkills={missingSkills}
