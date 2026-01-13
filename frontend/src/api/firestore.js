@@ -1,18 +1,5 @@
-import { db } from "../firebase";
-import {
-  collection,
-  addDoc,
-  serverTimestamp,
-} from "firebase/firestore";
-
-export async function saveAnalysisHistory(uid, data) {
-  if (!uid) return;
-
-  await addDoc(
-    collection(db, "users", uid, "history"),
-    {
-      ...data,
-      created_at: serverTimestamp(),
-    }
-);
+// Deprecated helper kept for compatibility. Use `saveHistory` in `src/api.js`.
+export async function saveAnalysisHistory() {
+  // intentionally noop to avoid duplicate backend writes
+  return;
 }

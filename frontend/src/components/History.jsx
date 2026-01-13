@@ -1,39 +1,32 @@
 import { useEffect, useState } from "react";
-import { fetchHistory } from "../api";
-import { auth } from "../firebase";
-import { db } from "../firebase";
-import {
-  collection,
-  getDocs,
-  query,
-  orderBy,
-} from "firebase/firestore";
+import { auth, db } from "../firebase";
+import { collection, getDocs, query, orderBy } from "firebase/firestore";
 
 
 export default function History({ onSelect,}) {
   const [history, setHistory] = useState([]);
 
   useEffect(() => {
-  const user = auth.currentUser;
-  if (!user) return;
+    const user = auth.currentUser;
+    if (!user) return;
 
-  const loadHistory = async () => {
-    const q = query(
-      collection(db, "users", user.uid, "history"),
-      orderBy("created_at", "desc")
-    );
+    const loadHistory = async () => {
+      const q = query(
+        collection(db, "users", user.uid, "history"),
+        orderBy("created_at", "desc")
+      );
 
-    const snap = await getDocs(q);
-    const data = snap.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+      const snap = await getDocs(q);
+      const data = snap.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
 
-    setHistory(data);
-  };
+      setHistory(data);
+    };
 
-  loadHistory();
-}, []);
+    loadHistory();
+  }, []);
 
 
   return (

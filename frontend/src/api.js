@@ -3,6 +3,16 @@
 // ===============================
 const BASE_URL = "https://ai-resume-analyzer-0bi6.onrender.com";
 
+import { db } from "./firebase";
+import {
+  collection,
+  addDoc,
+  getDocs,
+  query,
+  orderBy,
+  serverTimestamp,
+} from "firebase/firestore";
+
 // ===============================
 // ATS SCORE (RULE-BASED - KEEP)
 // ===============================
@@ -169,35 +179,34 @@ export async function downloadPDFReport(payload) {
   return await response.blob();
 }
 
-// ===============================
-// SAVE ANALYSIS HISTORY
-// ===============================
-export async function saveHistory(userId, payload) {
-  const response = await fetch(`${BASE_URL}/history/save`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      user_id: userId,
-      ...payload,
-    }),
-  });
+// ---------------- Firestore history helpers ----------------
 
-  if (!response.ok) {
-    throw new Error("Failed to save history");
+// Save analysis into Firestore under users/{userId}/history
+export async function saveHistory(userId, payload) {
+  if (!userId) return;
+  try {
+    const col = collection(db, "users", userId, "history");
+    await addDoc(col, {
+      ...payload,
+      created_at: serverTimestamp(),
+    });
+  } catch (err) {
+    console.error("saveHistory error:", err);
+    // Don't throw — history save should not break the main flow
   }
 }
 
-// ===============================
-// FETCH HISTORY
-// ===============================
+// Fetch history from Firestore and return { history: [...] }
 export async function fetchHistory(userId) {
-  const response = await fetch(`${BASE_URL}/history/${userId}`);
-
-  if (!response.ok) {
-    throw new Error("Failed to fetch history");
+  if (!userId) return { history: [] };
+  try {
+    const col = collection(db, "users", userId, "history");
+    const q = query(col, orderBy("created_at", "desc"));
+    const snap = await getDocs(q);
+    const data = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    return { history: data };
+  } catch (err) {
+    console.error("fetchHistory error:", err);
+    return { history: [] };
   }
-
-  return response.json();
 }

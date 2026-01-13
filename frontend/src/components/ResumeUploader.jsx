@@ -41,68 +41,74 @@ export default function ResumeUploader({ selectedHistory }) {
 
   /* ---------------- ANALYZE ---------------- */
   async function analyzeResume() {
-  if (!file || !jobDesc.trim()) {
-    alert("Please upload a resume and paste job description.");
-    return;
-  }
-
-  const user = auth.currentUser;
-  if (!user) {
-    alert("Please login again");
-    return;
-  }
-
-  try {
-    setLoading(true);
-
-    // 1️⃣ Upload Resume
-    const formData = new FormData();
-    formData.append("file", file);
-
-    const uploadRes = await fetch(
-      "https://ai-resume-analyzer-0bi6.onrender.com/resume/upload",
-      { method: "POST", body: formData }
-    );
-
-    const uploadData = await uploadRes.json();
-    const parsedText = uploadData.extracted_text || "";
-
-    if (!parsedText.trim()) {
-      throw new Error("Resume parsing failed");
+    if (!file || !jobDesc.trim()) {
+      alert("Please upload a resume and paste job description.");
+      return;
     }
 
-    setResumeText(parsedText);
+    const user = auth.currentUser;
+    if (!user) {
+      alert("Please login again");
+      return;
+    }
 
-    // 2️⃣ AI ANALYSIS (SINGLE CALL)
-    const aiResult = await analyzeResumeAI(parsedText, jobDesc);
+    try {
+      setLoading(true);
 
-    setAtsScore(aiResult.ats_score);
-    setMissingSkills(aiResult.missing_skills || []);
-    setRoadmap(aiResult.learning_roadmap || []);
-    setFeedback(aiResult.feedback || []);
-    setAiResponse(aiResult.ai_response || "");
+      // 1️⃣ Upload Resume
+      const formData = new FormData();
+      formData.append("file", file);
 
-    // 3️⃣ SAVE HISTORY
-    await saveAnalysisHistory(user.uid, {
-      ats_score: aiResult.ats_score,
-      missing_skills: aiResult.missing_skills || [],
-      roadmap: aiResult.learning_roadmap || [],
-      feedback: aiResult.feedback || [],
-      created_at: new Date(),
-    });
+      const uploadRes = await fetch(
+        "https://ai-resume-analyzer-0bi6.onrender.com/resume/upload",
+        { method: "POST", body: formData }
+      );
 
-  } catch (err) {
-    console.error(err);
-    alert(
-      "Analysis failed.\n\n" +
-      "• Please upload a valid PDF/DOCX\n" +
-      "• Ensure job description is not empty"
-    );
-  } finally {
-    setLoading(false);
+      if (!uploadRes.ok) {
+        const txt = await uploadRes.text().catch(() => "");
+        throw new Error("Resume upload failed: " + (txt || uploadRes.status));
+      }
+
+      const uploadData = await uploadRes.json();
+      const parsedText = uploadData.extracted_text || "";
+
+      if (!parsedText.trim()) {
+        throw new Error("Resume parsing failed");
+      }
+
+      setResumeText(parsedText);
+
+      // 2️⃣ AI ANALYSIS (SINGLE CALL)
+      const aiResult = await analyzeResumeAI(parsedText, jobDesc);
+
+      setAtsScore(aiResult.ats_score);
+      setMissingSkills(aiResult.missing_skills || []);
+      setRoadmap(aiResult.learning_roadmap || []);
+      setFeedback(aiResult.feedback || []);
+      setAiResponse(aiResult.ai_response || "");
+
+      // 3️⃣ SAVE HISTORY (background — do not fail analysis on save error)
+      try {
+        saveHistory(user.uid, {
+          ats_score: Number(aiResult.ats_score) || 0,
+          missing_skills: aiResult.missing_skills || [],
+          roadmap: aiResult.learning_roadmap || [],
+          feedback: aiResult.feedback || [],
+        }).catch((e) => console.error("saveHistory failed:", e));
+      } catch (e) {
+        console.error("saveHistory error:", e);
+      }
+    } catch (err) {
+      console.error(err);
+      alert(
+        "Analysis failed.\n\n" +
+          "• Please upload a valid PDF/DOCX\n" +
+          "• Ensure job description is not empty"
+      );
+    } finally {
+      setLoading(false);
+    }
   }
-}
-
 
   /* ---------------- PDF ---------------- */
   async function handleDownload() {

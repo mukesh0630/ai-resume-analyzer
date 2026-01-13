@@ -45,8 +45,6 @@ export default function Profile({ user }) {
     };
   }, [user]);
 
-
-
   useEffect(() => {
     if (avgATS < 40) setLevel("Beginner");
     else if (avgATS < 65) setLevel("Intermediate");
