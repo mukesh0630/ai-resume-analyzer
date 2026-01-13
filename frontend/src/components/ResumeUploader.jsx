@@ -21,6 +21,7 @@ export default function ResumeUploader({ selectedHistory }) {
   const [aiResponse, setAiResponse] = useState("");
   const [feedback, setFeedback] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
   /* 🔁 LOAD FROM HISTORY */
   useEffect(() => {
@@ -55,63 +56,90 @@ export default function ResumeUploader({ selectedHistory }) {
     try {
       setLoading(true);
 
-      // 1️⃣ Upload Resume
-      const formData = new FormData();
-      formData.append("file", file);
+      setErrorMsg("");
+      setLoading(true);
 
-      const uploadRes = await fetch(
-        "https://ai-resume-analyzer-0bi6.onrender.com/resume/upload",
-        { method: "POST", body: formData }
-      );
+      // 1️⃣ Upload Resume (separate - show detailed upload errors)
+      let parsedText = "";
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
 
-      if (!uploadRes.ok) {
-        const txt = await uploadRes.text().catch(() => "");
-        throw new Error("Resume upload failed: " + (txt || uploadRes.status));
+        const uploadRes = await fetch(
+          "https://ai-resume-analyzer-0bi6.onrender.com/resume/upload",
+          { method: "POST", body: formData }
+        );
+
+        if (!uploadRes.ok) {
+          const txt = await uploadRes.text().catch(() => "");
+          const msg = `Upload failed: ${uploadRes.status} ${uploadRes.statusText} ${txt}`;
+          console.error(msg);
+          setErrorMsg(msg);
+          setLoading(false);
+          return;
+        }
+
+        const uploadData = await uploadRes.json();
+        parsedText = uploadData.extracted_text || "";
+        if (!parsedText.trim()) {
+          const msg = "Resume parsing returned empty text.";
+          console.error(msg, uploadData);
+          setErrorMsg(msg);
+          setLoading(false);
+          return;
+        }
+
+        setResumeText(parsedText);
+      } catch (uploadErr) {
+        console.error("Upload error:", uploadErr);
+        setErrorMsg(uploadErr?.message || String(uploadErr));
+        setLoading(false);
+        return;
       }
-
-      const uploadData = await uploadRes.json();
-      const parsedText = uploadData.extracted_text || "";
-
-      if (!parsedText.trim()) {
-        throw new Error("Resume parsing failed");
-      }
-
-      setResumeText(parsedText);
 
       // 2️⃣ AI ANALYSIS (SINGLE CALL)
-      const aiResult = await analyzeResumeAI(parsedText, jobDesc);
-
-      // defensive: ensure we don't set undefined and avoid later async failures
-      const safe = aiResult || {};
-      setAtsScore(Number(safe.ats_score) || 0);
-      setMissingSkills(Array.isArray(safe.missing_skills) ? safe.missing_skills : []);
-      setRoadmap(Array.isArray(safe.learning_roadmap) ? safe.learning_roadmap : []);
-      setFeedback(Array.isArray(safe.feedback) ? safe.feedback : []);
-      setAiResponse(safe.ai_response || "");
-
-      // 3️⃣ SAVE HISTORY (background — do not fail analysis on save error)
       try {
-        saveHistory(user.uid, {
-          ats_score: Number(aiResult.ats_score) || 0,
-          missing_skills: aiResult.missing_skills || [],
-          roadmap: aiResult.learning_roadmap || [],
-          feedback: aiResult.feedback || [],
-        }).catch((e) => console.error("saveHistory failed:", e));
-      } catch (e) {
-        console.error("saveHistory error:", e);
-      }
-    } catch (err) {
-      console.error(err);
-      // show specific message when available to help debugging
-      const msg = err?.message || String(err) || "Analysis failed";
-      alert(`Analysis failed: ${msg}\n\n• If this persists, check server logs or try again.`);
-    } finally {
-      setLoading(false);
-    }
-  }
+        const aiResult = await analyzeResumeAI(parsedText, jobDesc);
+        const safe = aiResult || {};
 
-  /* ---------------- PDF ---------------- */
-  async function handleDownload() {
+        // Only set fields if present to avoid overwriting previous good results
+        if (typeof safe.ats_score !== "undefined") {
+          setAtsScore(Number(safe.ats_score));
+        }
+        if (Array.isArray(safe.missing_skills)) {
+          setMissingSkills(safe.missing_skills);
+        }
+        if (Array.isArray(safe.learning_roadmap)) {
+          setRoadmap(safe.learning_roadmap);
+        }
+        if (Array.isArray(safe.feedback)) {
+          setFeedback(safe.feedback);
+        }
+        if (typeof safe.ai_response !== "undefined") {
+          setAiResponse(safe.ai_response || "");
+        }
+
+        // Save history in background; don't allow errors to affect UI
+        try {
+          saveHistory(user.uid, {
+            ats_score: Number(safe.ats_score) || 0,
+            missing_skills: safe.missing_skills || [],
+            roadmap: safe.learning_roadmap || [],
+            feedback: safe.feedback || [],
+          }).catch((e) => console.error("saveHistory failed:", e));
+        } catch (e) {
+          console.error("saveHistory error:", e);
+        }
+      } catch (aiErr) {
+        console.error("AI analysis error:", aiErr);
+        const msg = aiErr?.message || String(aiErr) || "AI analysis failed";
+        setErrorMsg(msg);
+        // keep previous results (do not clear)
+        setLoading(false);
+        return;
+      } finally {
+        setLoading(false);
+      }
     const blob = await downloadPDFReport({
       ats_score: atsScore,
       missing_skills: missingSkills,
