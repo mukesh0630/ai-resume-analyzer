@@ -43,131 +43,130 @@ export default function ResumeUploader({ selectedHistory }) {
   /* ---------------- ANALYZE ---------------- */
   async function analyzeResume() {
     if (!file || !jobDesc.trim()) {
-      alert("Please upload a resume and paste job description.");
+      setErrorMsg("Please upload a resume and paste job description.");
       return;
     }
 
     const user = auth.currentUser;
     if (!user) {
-      alert("Please login again");
+      setErrorMsg("Please login again");
       return;
     }
 
+    setErrorMsg("");
+    setLoading(true);
+
+    // 1️⃣ Upload Resume (separate - show detailed upload errors)
+    let parsedText = "";
     try {
-      setLoading(true);
+      const formData = new FormData();
+      formData.append("file", file);
 
-      setErrorMsg("");
-      setLoading(true);
+      const uploadRes = await fetch(
+        "https://ai-resume-analyzer-0bi6.onrender.com/resume/upload",
+        { method: "POST", body: formData }
+      );
 
-      // 1️⃣ Upload Resume (separate - show detailed upload errors)
-      let parsedText = "";
-      try {
-        const formData = new FormData();
-        formData.append("file", file);
-
-        const uploadRes = await fetch(
-          "https://ai-resume-analyzer-0bi6.onrender.com/resume/upload",
-          { method: "POST", body: formData }
-        );
-
-        if (!uploadRes.ok) {
-          const txt = await uploadRes.text().catch(() => "");
-          const msg = `Upload failed: ${uploadRes.status} ${uploadRes.statusText} ${txt}`;
-          console.error(msg);
-          setErrorMsg(msg);
-          setLoading(false);
-          return;
-        }
-
-        const uploadData = await uploadRes.json();
-        parsedText = uploadData.extracted_text || "";
-        if (!parsedText.trim()) {
-          const msg = "Resume parsing returned empty text.";
-          console.error(msg, uploadData);
-          setErrorMsg(msg);
-          setLoading(false);
-          return;
-        }
-
-        setResumeText(parsedText);
-      } catch (uploadErr) {
-        console.error("Upload error:", uploadErr);
-        setErrorMsg(uploadErr?.message || String(uploadErr));
-        setLoading(false);
-        return;
-      }
-
-      // 2️⃣ AI ANALYSIS (SINGLE CALL)
-      try {
-        const aiResult = await analyzeResumeAI(parsedText, jobDesc);
-        const safe = aiResult || {};
-
-        // Only set fields if present to avoid overwriting previous good results
-        if (typeof safe.ats_score !== "undefined") {
-          setAtsScore(Number(safe.ats_score));
-        }
-        if (Array.isArray(safe.missing_skills)) {
-          setMissingSkills(safe.missing_skills);
-        }
-        if (Array.isArray(safe.learning_roadmap)) {
-          setRoadmap(safe.learning_roadmap);
-        }
-        if (Array.isArray(safe.feedback)) {
-          setFeedback(safe.feedback);
-        }
-        if (typeof safe.ai_response !== "undefined") {
-          setAiResponse(safe.ai_response || "");
-        }
-
-        // Save history in background; don't allow errors to affect UI
-        try {
-          saveHistory(user.uid, {
-            ats_score: Number(safe.ats_score) || 0,
-            missing_skills: safe.missing_skills || [],
-            roadmap: safe.learning_roadmap || [],
-            feedback: safe.feedback || [],
-          }).catch((e) => console.error("saveHistory failed:", e));
-        } catch (e) {
-          console.error("saveHistory error:", e);
-        }
-      } catch (aiErr) {
-        console.error("AI analysis error:", aiErr);
-        const msg = aiErr?.message || String(aiErr) || "AI analysis failed";
+      if (!uploadRes.ok) {
+        const txt = await uploadRes.text().catch(() => "");
+        const msg = `Upload failed: ${uploadRes.status} ${uploadRes.statusText} ${txt}`;
+        console.error(msg);
         setErrorMsg(msg);
-        // keep previous results (do not clear)
         setLoading(false);
         return;
-      } finally {
-        setLoading(false);
       }
-    const blob = await downloadPDFReport({
-      ats_score: atsScore,
-      missing_skills: missingSkills,
-      roadmap,
-      ai_summary: aiResponse,
-    });
 
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "AI_Resume_Report.pdf";
-    a.click();
+      const uploadData = await uploadRes.json();
+      parsedText = uploadData.extracted_text || "";
+      if (!parsedText.trim()) {
+        const msg = "Resume parsing returned empty text.";
+        console.error(msg, uploadData);
+        setErrorMsg(msg);
+        setLoading(false);
+        return;
+      }
+
+      setResumeText(parsedText);
+    } catch (uploadErr) {
+      console.error("Upload error:", uploadErr);
+      setErrorMsg(uploadErr?.message || String(uploadErr));
+      setLoading(false);
+      return;
+    }
+
+    // 2️⃣ AI ANALYSIS (SINGLE CALL)
+    try {
+      const aiResult = await analyzeResumeAI(parsedText, jobDesc);
+      const safe = aiResult || {};
+
+      // Only set fields if present to avoid overwriting previous good results
+      if (typeof safe.ats_score !== "undefined") {
+        setAtsScore(Number(safe.ats_score));
+      }
+      if (Array.isArray(safe.missing_skills)) {
+        setMissingSkills(safe.missing_skills);
+      }
+      if (Array.isArray(safe.learning_roadmap)) {
+        setRoadmap(safe.learning_roadmap);
+      }
+      if (Array.isArray(safe.feedback)) {
+        setFeedback(safe.feedback);
+      }
+      if (typeof safe.ai_response !== "undefined") {
+        setAiResponse(safe.ai_response || "");
+      }
+
+      // Save history in background; don't allow errors to affect UI
+      try {
+        saveHistory(user.uid, {
+          ats_score: Number(safe.ats_score) || 0,
+          missing_skills: safe.missing_skills || [],
+          roadmap: safe.learning_roadmap || [],
+          feedback: safe.feedback || [],
+        }).catch((e) => console.error("saveHistory failed:", e));
+      } catch (e) {
+        console.error("saveHistory error:", e);
+      }
+    } catch (aiErr) {
+      console.error("AI analysis error:", aiErr);
+      const msg = aiErr?.message || String(aiErr) || "AI analysis failed";
+      setErrorMsg(msg);
+      // keep previous results (do not clear)
+      setLoading(false);
+      return;
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  /* ---------------- PDF ---------------- */
+  async function handleDownload() {
+    try {
+      const blob = await downloadPDFReport({
+        ats_score: atsScore,
+        missing_skills: missingSkills,
+        roadmap,
+        ai_summary: aiResponse,
+      });
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "AI_Resume_Report.pdf";
+      a.click();
+    } catch (e) {
+      console.error("download error:", e);
+      setErrorMsg(e?.message || String(e));
+    }
   }
 
   /* ---------------- UI ---------------- */
   return (
     <div className="max-w-5xl mx-auto space-y-8">
-      <h1 className="text-4xl font-bold text-purple-400">
-        Analyze Your Resume
-      </h1>
+      <h1 className="text-4xl font-bold text-purple-400">Analyze Your Resume</h1>
 
       <div className="bg-white/10 p-6 rounded-2xl border border-white/10">
-        <input
-          type="file"
-          accept=".pdf,.docx"
-          onChange={handleResumeUpload}
-          className="mb-4"
-        />
+        <input type="file" accept=".pdf,.docx" onChange={handleResumeUpload} className="mb-4" />
 
         <textarea
           placeholder="Paste Job Description here..."
@@ -176,13 +175,19 @@ export default function ResumeUploader({ selectedHistory }) {
           className="w-full h-32 p-4 rounded-xl bg-black/40 border border-white/10"
         />
 
-        <button
-          onClick={analyzeResume}
-          disabled={loading}
-          className="mt-4 bg-purple-500 hover:bg-purple-600 px-6 py-3 rounded-xl font-semibold"
-        >
-          {loading ? "Analyzing..." : "Analyze Resume"}
-        </button>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={analyzeResume}
+            disabled={loading}
+            className="mt-4 bg-purple-500 hover:bg-purple-600 px-6 py-3 rounded-xl font-semibold"
+          >
+            {loading ? "Analyzing..." : "Analyze Resume"}
+          </button>
+
+          {errorMsg && (
+            <p className="text-red-400 ml-2">{errorMsg}</p>
+          )}
+        </div>
       </div>
 
       {atsScore !== null && (
@@ -213,22 +218,11 @@ export default function ResumeUploader({ selectedHistory }) {
 
           <SkillGapChart skills={missingSkills} />
 
-          <SkillRadarChart
-            matchedSkills={roadmap.map((r) => r.skill)}
-            missingSkills={missingSkills}
-          />
+          <SkillRadarChart matchedSkills={roadmap.map((r) => r.skill)} missingSkills={missingSkills} />
 
-          <AIChat
-            resumeText={resumeText}
-            jobDesc={jobDesc}
-            missingSkills={missingSkills}
-            atsScore={atsScore}
-          />
+          <AIChat resumeText={resumeText} jobDesc={jobDesc} missingSkills={missingSkills} atsScore={atsScore} />
 
-          <button
-            onClick={handleDownload}
-            className="bg-green-500 hover:bg-green-600 px-6 py-3 rounded-xl font-semibold"
-          >
+          <button onClick={handleDownload} className="bg-green-500 hover:bg-green-600 px-6 py-3 rounded-xl font-semibold">
             Download PDF Report
           </button>
         </>
