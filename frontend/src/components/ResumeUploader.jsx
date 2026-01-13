@@ -81,11 +81,13 @@ export default function ResumeUploader({ selectedHistory }) {
       // 2️⃣ AI ANALYSIS (SINGLE CALL)
       const aiResult = await analyzeResumeAI(parsedText, jobDesc);
 
-      setAtsScore(aiResult.ats_score);
-      setMissingSkills(aiResult.missing_skills || []);
-      setRoadmap(aiResult.learning_roadmap || []);
-      setFeedback(aiResult.feedback || []);
-      setAiResponse(aiResult.ai_response || "");
+      // defensive: ensure we don't set undefined and avoid later async failures
+      const safe = aiResult || {};
+      setAtsScore(Number(safe.ats_score) || 0);
+      setMissingSkills(Array.isArray(safe.missing_skills) ? safe.missing_skills : []);
+      setRoadmap(Array.isArray(safe.learning_roadmap) ? safe.learning_roadmap : []);
+      setFeedback(Array.isArray(safe.feedback) ? safe.feedback : []);
+      setAiResponse(safe.ai_response || "");
 
       // 3️⃣ SAVE HISTORY (background — do not fail analysis on save error)
       try {
@@ -100,11 +102,9 @@ export default function ResumeUploader({ selectedHistory }) {
       }
     } catch (err) {
       console.error(err);
-      alert(
-        "Analysis failed.\n\n" +
-          "• Please upload a valid PDF/DOCX\n" +
-          "• Ensure job description is not empty"
-      );
+      // show specific message when available to help debugging
+      const msg = err?.message || String(err) || "Analysis failed";
+      alert(`Analysis failed: ${msg}\n\n• If this persists, check server logs or try again.`);
     } finally {
       setLoading(false);
     }
