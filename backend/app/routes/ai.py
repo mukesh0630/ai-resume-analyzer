@@ -1,9 +1,9 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import List, Optional
-import os
 
 router = APIRouter(prefix="/ai", tags=["AI Assistant"])
+
 
 class AIRequest(BaseModel):
     resume_text: str
@@ -11,25 +11,37 @@ class AIRequest(BaseModel):
     ats_score: Optional[float] = 0
     missing_skills: List[str] = []
 
+
 @router.post("/assistant")
 def ai_assistant(data: AIRequest):
-    # ⚠️ TEMP: rule-based short insights (NO external AI dependency)
-    insights = []
+    # Structured, deterministic AI-like response (no external LLM)
+    summary_parts = []
+    strengths = []
+    weaknesses = []
+    recommendations = []
 
-    if data.ats_score < 50:
-        insights.append("Your resume lacks several key job-related skills.")
+    if data.ats_score and data.ats_score >= 70:
+        strengths.append("Good keyword alignment with the job description.")
     else:
-        insights.append("Your resume aligns reasonably well with the job role.")
+        weaknesses.append("Insufficient job-specific keyword coverage.")
 
     if data.missing_skills:
-        insights.append(
-            "Focus on learning: " + ", ".join(data.missing_skills[:5])
-        )
+        weaknesses.extend([f"Missing: {s}" for s in data.missing_skills[:6]])
+        recommendations.append("Learn and add the missing skills listed above; include related projects and keywords.")
 
-    insights.append("Add measurable achievements to improve ATS ranking.")
-    insights.append("Use exact keywords from the job description.")
-    insights.append("Keep resume length within 1–2 pages.")
+    recommendations.append("Quantify achievements (metrics, results) where possible.")
+    recommendations.append("Use consistent formatting and section headers: Experience, Skills, Projects.")
+
+    summary = "Resume review generated. Focus on matching job skills and quantifying impact."
+
+    overall = " & ".join([
+        "Good match" if data.ats_score and data.ats_score >= 70 else "Needs improvement"
+    ])
 
     return {
-        "ai_response": "\n".join(f"- {i}" for i in insights)
+        "summary": summary,
+        "strengths": strengths,
+        "weaknesses": weaknesses,
+        "recommendations": recommendations,
+        "overall_feedback": overall,
     }

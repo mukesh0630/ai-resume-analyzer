@@ -1,9 +1,10 @@
-from fastapi import APIRouter, UploadFile, File
+from fastapi import APIRouter, UploadFile, File, HTTPException
 import os
 import uuid
 from backend.app.services.resume_parser import (
     extract_text_from_pdf,
-    extract_text_from_docx
+    extract_text_from_docx,
+    merge_preview_and_full,
 )
 
 router = APIRouter(
@@ -26,12 +27,16 @@ async def upload_resume(file: UploadFile = File(...)):
         text = extract_text_from_docx(temp_filename)
     else:
         os.remove(temp_filename)
-        return {"error": "Unsupported file format"}
+        raise HTTPException(status_code=422, detail="Unsupported file format")
 
     os.remove(temp_filename)
 
-    return {
-        "filename": file.filename,
-        "text_length": len(text),
-        "extracted_text": text
-    }
+    # merge preview/full if any (parser helper may handle previews)
+    full_text = merge_preview_and_full(text)
+
+    # normalize and enforce minimum length
+    if not full_text or len(full_text.strip()) < 200:
+        raise HTTPException(status_code=422, detail="Resume parsing failed or text too short (<200 chars)")
+
+    # always return a single key `extracted_text`
+    return {"extracted_text": full_text}

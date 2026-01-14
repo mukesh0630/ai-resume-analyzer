@@ -1,7 +1,4 @@
-def generate_feedback(data: dict):
-    ats_score = data.get("ats_score", 0)
-    missing_skills = data.get("missing_skills", [])
-
+def generate_feedback(ats_score: float, missing_skills: list):
     feedback = []
 
     if ats_score < 40:
@@ -12,13 +9,10 @@ def generate_feedback(data: dict):
         feedback.append("Resume matches most ATS requirements well.")
 
     if missing_skills:
-        feedback.append(
-            f"Add these missing skills: {', '.join(missing_skills[:5])}"
-        )
+        feedback.append(f"Add these missing skills: {', '.join(missing_skills[:5])}")
 
     feedback.append("Use strong action verbs in experience section.")
     feedback.append("Quantify achievements with numbers.")
     feedback.append("Ensure resume format is ATS-friendly.")
 
-    # Limit output (important for UI cleanliness)
     return feedback[:6]

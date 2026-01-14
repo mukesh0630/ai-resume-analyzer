@@ -14,6 +14,18 @@ def clean_text(text: str) -> str:
     return text.strip()
 
 
+def merge_preview_and_full(text: str) -> str:
+    # In some parsers there might be preview markers or truncated text.
+    # This helper normalizes whitespace and returns the cleaned full text.
+    if not text:
+        return ""
+    t = clean_text(text)
+    # remove repeated short previews like '...'
+    t = t.replace("...", " ")
+    t = "\n".join(line.strip() for line in t.splitlines() if line.strip())
+    return t
+
+
 def extract_text_from_pdf(file_path: str) -> str:
     text = ""
 

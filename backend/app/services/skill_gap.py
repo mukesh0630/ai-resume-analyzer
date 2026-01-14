@@ -1,6 +1,8 @@
 import re
-from typing import Dict, List
+from typing import Dict, List, Set
+from difflib import get_close_matches
 
+# Expanded and normalized skill keywords with aliases
 SKILL_KEYWORDS = {
 
     # =========================
@@ -143,15 +145,39 @@ SKILL_KEYWORDS = {
 
 }
 
-def extract_skills(text: str):
+def tokenize(text: str) -> List[str]:
+    t = text.lower()
+    t = re.sub(r"[^a-z0-9+#\s]", " ", t)
+    toks = [tok.strip() for tok in t.split() if len(tok) > 1]
+    return list(dict.fromkeys(toks))  # preserve order, dedupe
+
+
+def extract_skills(text: str) -> Set[str]:
     text = text.lower()
     found = set()
 
+    tokens = tokenize(text)
+
+    # direct match on variants
     for skill, variants in SKILL_KEYWORDS.items():
         for v in variants:
-            if re.search(rf"\b{re.escape(v)}\b", text):
+            pattern = rf"\b{re.escape(v)}\b"
+            if re.search(pattern, text):
                 found.add(skill)
                 break
+
+    # fuzzy match tokens to variant forms (catch plurals / small typos)
+    all_variants = {v for variants in SKILL_KEYWORDS.values() for v in variants}
+    for tok in tokens:
+        if tok in all_variants:
+            continue
+        close = get_close_matches(tok, list(all_variants), n=1, cutoff=0.85)
+        if close:
+            # map back to canonical skill
+            for skill, variants in SKILL_KEYWORDS.items():
+                if close[0] in variants:
+                    found.add(skill)
+                    break
 
     return found
 
@@ -165,5 +191,7 @@ def calculate_skill_gap(resume_text: str, job_text: str):
 
     return {
         "matched_skills": matched,
-        "missing_skills": missing
+        "missing_skills": missing,
+        "resume_skills": sorted(resume_skills),
+        "job_skills": sorted(job_skills),
     }

@@ -1,45 +1,26 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List
-import google.generativeai as genai
-import os
 
-router = APIRouter(prefix="/roadmap", tags=["Learning Roadmap"])
-
-genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
-
-model = genai.GenerativeModel("models/gemini-2.5-flash")
+router = APIRouter(prefix="/ats", tags=["ATS"])
 
 
 class RoadmapRequest(BaseModel):
     missing_skills: List[str]
 
 
-@router.post("")
+@router.post("/roadmap")
 def generate_roadmap(req: RoadmapRequest):
     if not req.missing_skills:
         raise HTTPException(status_code=400, detail="Missing skills list is empty")
 
-    prompt = f"""
-Create a beginner-friendly, step-by-step learning roadmap
-for the following missing skills:
+    # Rule-based short roadmap per skill (no external LLM call)
+    roadmap = []
+    for skill in req.missing_skills[:10]:
+        s = skill.capitalize()
+        roadmap.append({
+            "skill": skill,
+            "recommendation": f"Learn the fundamentals of {s}; follow tutorials, build a small project, and practice with online exercises." 
+        })
 
-{", ".join(req.missing_skills)}
-
-Include:
-- What to learn
-- Practice ideas
-- Mini projects
-
-Rules:
-- MAXIMUM 5–7 bullet points
-- Each bullet = one learning step
-- Beginner friendly
-- No paragraphs
-"""
-
-    response = model.generate_content(prompt)
-
-    return {
-        "roadmap": response.text
-    }
+    return {"learning_roadmap": roadmap}

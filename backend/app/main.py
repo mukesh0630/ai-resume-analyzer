@@ -7,7 +7,6 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 import os
 import uuid
-from backend.app.routes import ai_ats
 
 
 # -----------------------------
@@ -45,25 +44,19 @@ from backend.app.firebase_config import db
 from backend.app.routes import (
     resume,
     ats,
-    similarity,
     skill_gap,
-    feedback,
     ai,
     protected,
     history,
-    roadmap
 )
+
 
 app.include_router(resume.router)
 app.include_router(ats.router)
-app.include_router(similarity.router)
 app.include_router(skill_gap.router)
-app.include_router(feedback.router)
 app.include_router(ai.router)
 app.include_router(protected.router)
 app.include_router(history.router)
-app.include_router(roadmap.router)
-app.include_router(ai_ats.router)
 
 # -----------------------------
 # Health Check
@@ -149,43 +142,3 @@ def generate_pdf(data: dict):
         media_type="application/pdf",
         filename="AI_Resume_Report.pdf"
     )
-
-# -----------------------------
-# Save History
-# -----------------------------
-@app.post("/history/save")
-def save_history(data: dict):
-    user_id = data["user_id"]
-
-    record = {
-        "user_id": user_id,
-        "ats_score": data.get("ats_score"),
-        "missing_skills": data.get("missing_skills", []),
-        "roadmap": data.get("roadmap", ""),
-        "created_at": datetime.utcnow()
-    }
-
-    db.collection("users") \
-      .document(user_id) \
-      .collection("history") \
-      .add(record)
-
-    return {"status": "saved"}
-
-# -----------------------------
-# Fetch History
-# -----------------------------
-@app.get("/history/{user_id}")
-def get_history(user_id: str):
-    docs = (
-        db.collection("users")
-        .document(user_id)
-        .collection("history")
-        .stream()
-    )
-
-    return {"history": [doc.to_dict() for doc in docs]}
-
-
-
-

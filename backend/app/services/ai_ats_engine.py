@@ -1,38 +1,42 @@
 import os
 import json
-from openai import OpenAI
+import timeout_decorator
+from backend.app.services.skill_gap import extract_skills
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-def analyze_resume_with_ai(resume_text: str, job_description: str):
-    prompt = f"""
-You are an Applicant Tracking System (ATS) engine.
+def analyze_resume_with_ai(resume_text: str, job_description: str, timeout_secs: int = 10):
+    """
+    Lightweight deterministic analyzer that reduces LLM calls.
+    Returns a structure compatible with previous AI-ATS output but deterministic.
+    """
+    resume = resume_text or ""
+    job = job_description or ""
 
-Analyze the resume against the job description.
+    # reuse skill extractor
+    resume_skills = extract_skills(resume)
+    job_skills = extract_skills(job)
 
-Return STRICT JSON ONLY with the following fields:
-- ats_score (number between 0 and 100)
-- matched_skills (array of strings)
-- missing_skills (array of strings)
-- feedback (array of max 5 short bullet points)
-- roadmap (array of max 5 short learning steps)
+    matched = sorted(resume_skills & job_skills)
+    missing = sorted(job_skills - resume_skills)
 
-Resume:
-{resume_text}
+    ats_score = 50
+    if job_skills:
+        raw = (len(matched) / len(job_skills)) * 100
+        ats_score = max(30, min(95, round(raw)))
 
-Job Description:
-{job_description}
-"""
+    # simple deterministic feedback
+    feedback = []
+    if ats_score < 60:
+        feedback.append("Add more job-specific keywords and measurable achievements.")
+    else:
+        feedback.append("Good keyword match; emphasize achievements with metrics.")
 
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.3
-    )
+    roadmap = [f"Learn {s}" for s in missing[:5]]
 
-    content = response.choices[0].message.content.strip()
-
-    try:
-        return json.loads(content)
-    except Exception:
-        raise ValueError("AI response is not valid JSON")
+    return {
+        "ats_score": ats_score,
+        "matched_skills": matched,
+        "missing_skills": missing,
+        "feedback": feedback,
+        "roadmap": roadmap
+    }
