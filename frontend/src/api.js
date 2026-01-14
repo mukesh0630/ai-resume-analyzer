@@ -131,7 +131,7 @@ export async function askResumeAI(
 // ✅ AI-BASED FULL RESUME ANALYSIS (NEW)
 // ===============================
 export async function analyzeResumeAI(resumeText, jobDescription) {
-  const response = await fetch(`${BASE_URL}/ai/analyze`, {
+  const response = await fetch(`${BASE_URL}/ai-ats/analyze`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -145,8 +145,20 @@ export async function analyzeResumeAI(resumeText, jobDescription) {
   if (!response.ok) {
     throw new Error("AI resume analysis failed");
   }
+  const data = await response.json();
 
-  return response.json();
+  // Normalize response to the shape the frontend expects
+  const normalized = {
+    ats_score: data.ats_score,
+    matched_skills: data.matched_skills || data.matched || [],
+    missing_skills: data.missing_skills || data.missing || [],
+    learning_roadmap: data.learning_roadmap || data.roadmap || [],
+    feedback: data.feedback || data.recommendations || [],
+    ai_response:
+      data.ai_response || (Array.isArray(data.feedback) ? data.feedback.join(" ") : ""),
+  };
+
+  return normalized;
   /*
     Expected response:
     {

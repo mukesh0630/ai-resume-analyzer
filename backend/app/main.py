@@ -46,6 +46,7 @@ from backend.app.routes import (
     ats,
     skill_gap,
     ai,
+    ai_ats,
     protected,
     history,
 )
@@ -55,6 +56,7 @@ app.include_router(resume.router)
 app.include_router(ats.router)
 app.include_router(skill_gap.router)
 app.include_router(ai.router)
+app.include_router(ai_ats.router)
 app.include_router(protected.router)
 app.include_router(history.router)
 
