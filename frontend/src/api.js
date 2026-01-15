@@ -128,50 +128,40 @@ export async function askResumeAI(
 }
 
 // ===============================
-// ✅ AI-BASED FULL RESUME ANALYSIS (NEW)
+// ✅ AI-BASED FULL RESUME ANALYSIS
 // ===============================
 export async function analyzeResumeAI(resumeText, jobDescription) {
-  const endpoints = [
-    "/ats/analyze",
-    "/ai-ats/analyze",
-    "/ai/analyze",
-  ];
+  const url = `${BASE_URL}/ats/analyze`;
+  
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ 
+        resume_text: resumeText, 
+        job_description: jobDescription 
+      }),
+    });
 
-  let lastErr = null;
-  for (const ep of endpoints) {
-    try {
-      const url = `${BASE_URL}${ep}`;
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resume_text: resumeText, job_description: jobDescription }),
-      });
-
-      if (!res.ok) {
-        const txt = await res.text().catch(() => "");
-        lastErr = `Endpoint ${ep} failed: ${res.status} ${res.statusText} ${txt}`;
-        // try next endpoint
-        continue;
-      }
-
-      const data = await res.json();
-      // Normalize and return
-      return {
-        ats_score: data.ats_score,
-        matched_skills: data.matched_skills || data.matched || [],
-        missing_skills: data.missing_skills || data.missing || [],
-        learning_roadmap: data.learning_roadmap || data.roadmap || [],
-        feedback: data.feedback || data.recommendations || [],
-        ai_response: data.ai_response || (Array.isArray(data.feedback) ? data.feedback.join(" ") : ""),
-        _used_endpoint: ep,
-      };
-    } catch (err) {
-      lastErr = `Endpoint ${ep} threw: ${err?.message || String(err)}`;
-      continue;
+    if (!response.ok) {
+      const txt = await response.text().catch(() => "");
+      throw new Error(`HTTP ${response.status} ${response.statusText}: ${txt}`);
     }
-  }
 
-  throw new Error(`AI resume analysis failed: ${lastErr || "no endpoints responded"}`);
+    const data = await response.json();
+    
+    // Normalize response to match frontend expectations
+    return {
+      ats_score: data.ats_score || 0,
+      matched_skills: data.matched_skills || [],
+      missing_skills: data.missing_skills || [],
+      learning_roadmap: data.roadmap || [],
+      feedback: data.feedback || [],
+      ai_response: (Array.isArray(data.feedback) ? data.feedback.join(" ") : ""),
+    };
+  } catch (err) {
+    throw new Error(`AI resume analysis failed: ${err?.message || String(err)}`);
+  }
   /*
     Expected response:
     {
