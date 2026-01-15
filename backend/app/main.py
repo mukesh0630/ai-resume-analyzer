@@ -1,10 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-from dotenv import load_dotenv
+try:
+    from dotenv import load_dotenv
+except Exception:
+    def load_dotenv():
+        return None
+
 from datetime import datetime
-from reportlab.lib.pagesizes import A4
-from reportlab.pdfgen import canvas
 import os
 import uuid
 
@@ -34,31 +37,33 @@ app.add_middleware(
 )
 
 # -----------------------------
-# Firebase
+# Firebase (initialized in firestore_db.py service)
 # -----------------------------
-from backend.app.firebase_config import db
+from backend.app.firebase_config import db  # Optional import, not used directly
 
 # -----------------------------
 # Routes
 # -----------------------------
 from backend.app.routes import (
+    ai_ats,
     resume,
+    history,
+    ai,
     ats,
     skill_gap,
-    ai,
-    ai_ats,
-    protected,
-    history,
+    roadmap,
+    feedback,
 )
 
 
 app.include_router(resume.router)
 app.include_router(ats.router)
 app.include_router(skill_gap.router)
-app.include_router(ai.router)
+app.include_router(roadmap.router)
 app.include_router(ai_ats.router)
-app.include_router(protected.router)
+app.include_router(ai.router)
 app.include_router(history.router)
+app.include_router(feedback.router)
 
 # -----------------------------
 # Health Check

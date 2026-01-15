@@ -1,17 +1,9 @@
-from fastapi import APIRouter
-from pydantic import BaseModel
-from backend.app.services.similarity import similarity_score
+from fastapi import APIRouter, HTTPException
 
 router = APIRouter(prefix="/similarity", tags=["Similarity"])
 
-class SimilarityRequest(BaseModel):
-    resume_text: str
-    job_description: str
 
 @router.post("")
-def similarity(data: SimilarityRequest):
-    return {
-        "similarity_score": similarity_score(
-            data.resume_text, data.job_description
-        )
-    }
+def similarity_disabled():
+    # Legacy endpoint removed — return 410 Gone to indicate deprecation
+    raise HTTPException(status_code=410, detail="Similarity endpoint removed")

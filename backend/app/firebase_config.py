@@ -1,7 +1,12 @@
 import json
 import os
-import firebase_admin
-from firebase_admin import credentials, firestore
+try:
+    import firebase_admin
+    from firebase_admin import credentials, firestore
+except Exception:
+    firebase_admin = None
+    credentials = None
+    firestore = None
 
 def get_firebase_cred():
     # 1️⃣ Try ENV (production)
@@ -18,9 +23,9 @@ def get_firebase_cred():
 
     return credentials.Certificate(file_path)
 
-cred = get_firebase_cred()
-
-if not firebase_admin._apps:
-    firebase_admin.initialize_app(cred)
-
-db = firestore.client()
+db = None
+if firebase_admin and credentials and firestore:
+    cred = get_firebase_cred()
+    if not firebase_admin._apps:
+        firebase_admin.initialize_app(cred)
+    db = firestore.client()

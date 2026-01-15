@@ -1,6 +1,6 @@
-import PyPDF2
-from docx import Document
 import re
+
+
 
 
 def clean_text(text: str) -> str:
@@ -27,6 +27,11 @@ def merge_preview_and_full(text: str) -> str:
 
 
 def extract_text_from_pdf(file_path: str) -> str:
+    try:
+        import PyPDF2
+    except Exception as e:
+        raise RuntimeError("PyPDF2 is required for PDF parsing") from e
+
     text = ""
 
     with open(file_path, "rb") as f:
@@ -40,6 +45,11 @@ def extract_text_from_pdf(file_path: str) -> str:
 
 
 def extract_text_from_docx(file_path: str) -> str:
+    try:
+        from docx import Document
+    except Exception as e:
+        raise RuntimeError("python-docx is required for DOCX parsing") from e
+
     doc = Document(file_path)
     text = []
 

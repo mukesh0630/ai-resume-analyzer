@@ -1,6 +1,5 @@
 import os
 import json
-import timeout_decorator
 from backend.app.services.skill_gap import extract_skills
 
 
