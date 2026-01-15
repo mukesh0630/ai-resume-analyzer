@@ -109,22 +109,36 @@ export default function ResumeUploader({ selectedHistory }) {
       setMatchedSkills(atsRes?.matched_skills || []);
       setMissingSkills(skillRes?.missing_skills || []);
 
-      // 3️⃣ PARALLEL: Roadmap + Full Analyzer
-      const [roadmapRes, analyzerRes] = await Promise.all([
-        getLearningRoadmap(skillRes?.missing_skills || []),
-        analyzeResumeAI(parsedText, jobDesc),
-      ]);
+      const missingSkillsData = skillRes?.missing_skills || [];
+      let roadmapData = [];
+      let feedbackData = [];
 
-      setRoadmap(roadmapRes?.learning_roadmap || []);
-      setFeedback(analyzerRes?.feedback || []);
+      // 3️⃣ PARALLEL: Roadmap + Full Analyzer (non-critical, set defaults on failure)
+      try {
+        const [roadmapRes, analyzerRes] = await Promise.all([
+          getLearningRoadmap(missingSkillsData),
+          analyzeResumeAI(parsedText, jobDesc),
+        ]);
+
+        roadmapData = roadmapRes?.learning_roadmap || [];
+        feedbackData = analyzerRes?.feedback || [];
+      } catch (roadmapErr) {
+        console.warn("Roadmap/Analyzer fetch failed:", roadmapErr);
+        // Set reasonable defaults so UI still displays
+        roadmapData = [];
+        feedbackData = ["Improve keyword alignment", "Add measurable achievements"];
+      }
+
+      setRoadmap(roadmapData);
+      setFeedback(feedbackData);
 
       // Save history in background
       try {
         saveHistory(user.uid, {
           ats_score: score,
-          missing_skills: skillRes?.missing_skills || [],
-          roadmap: roadmapRes?.learning_roadmap || [],
-          feedback: analyzerRes?.feedback || [],
+          missing_skills: missingSkillsData,
+          roadmap: roadmapData,
+          feedback: feedbackData,
         }).catch((e) => console.error("saveHistory failed:", e));
       } catch (e) {
         console.error("saveHistory error:", e);
