@@ -7,17 +7,17 @@ export default function AIChat({
   missingSkills = [],
   atsScore = 0,
 }) {
-  const [response, setResponse] = useState("");
+  const [aiData, setAiData] = useState(null);
   const [loading, setLoading] = useState(false);
 
   async function askAI() {
     if (!resumeText || !jobDesc) {
-      setResponse("Please analyze a resume first.");
+      setAiData({ error: "Please analyze a resume first." });
       return;
     }
 
     setLoading(true);
-    setResponse("");
+    setAiData(null);
 
     try {
       const result = await askResumeAI(
@@ -27,10 +27,10 @@ export default function AIChat({
         missingSkills
       );
 
-      setResponse(result.ai_response);
+      setAiData(result);
     } catch (err) {
-      console.error(err);
-      setResponse("AI assistant is currently unavailable.");
+      console.error("AI assistant error:", err);
+      setAiData({ error: "AI assistant is currently unavailable." });
     }
 
     setLoading(false);
@@ -54,11 +54,53 @@ export default function AIChat({
         {loading ? "Analyzing..." : "Generate AI Insights"}
       </button>
 
-      {response && (
-        <div className="mt-6 text-gray-300 text-sm space-y-2">
-          {response.split("\n").map((line, index) => (
-            <p key={index}>{line}</p>
-          ))}
+      {aiData?.error && (
+        <div className="mt-6 p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-300">
+          {aiData.error}
+        </div>
+      )}
+
+      {aiData && !aiData.error && (
+        <div className="mt-6 space-y-6 text-gray-300 text-sm">
+          {aiData.summary && (
+            <div>
+              <h4 className="font-semibold text-purple-300 mb-2">Summary</h4>
+              <p className="text-gray-400">{aiData.summary}</p>
+            </div>
+          )}
+
+          {aiData.strengths && aiData.strengths.length > 0 && (
+            <div>
+              <h4 className="font-semibold text-green-300 mb-2">Strengths ✓</h4>
+              <ul className="list-disc list-inside space-y-1">
+                {aiData.strengths.map((s, i) => (
+                  <li key={i} className="text-gray-400">{s}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {aiData.weaknesses && aiData.weaknesses.length > 0 && (
+            <div>
+              <h4 className="font-semibold text-orange-300 mb-2">Areas to Improve ⚡</h4>
+              <ul className="list-disc list-inside space-y-1">
+                {aiData.weaknesses.map((w, i) => (
+                  <li key={i} className="text-gray-400">{w}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {aiData.improvement_tips && aiData.improvement_tips.length > 0 && (
+            <div>
+              <h4 className="font-semibold text-blue-300 mb-2">Tips for Improvement 💡</h4>
+              <ul className="list-disc list-inside space-y-1">
+                {aiData.improvement_tips.map((tip, i) => (
+                  <li key={i} className="text-gray-400">{tip}</li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
     </div>

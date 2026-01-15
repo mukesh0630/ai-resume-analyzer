@@ -14,34 +14,42 @@ class AIRequest(BaseModel):
 
 @router.post("/assistant")
 def ai_assistant(data: AIRequest):
-    # Structured, deterministic AI-like response (no external LLM)
-    summary_parts = []
+    """
+    Generate structured resume feedback without external LLM.
+    Returns: summary, strengths, weaknesses, improvement_tips
+    """
     strengths = []
     weaknesses = []
-    recommendations = []
+    improvement_tips = []
 
-    if data.ats_score and data.ats_score >= 70:
-        strengths.append("Good keyword alignment with the job description.")
+    # Strengths based on ATS score
+    if data.ats_score and data.ats_score >= 80:
+        strengths.append("Excellent keyword alignment with job description")
+        strengths.append("Strong ATS compatibility")
+    elif data.ats_score and data.ats_score >= 60:
+        strengths.append("Good skill match with job requirements")
     else:
-        weaknesses.append("Insufficient job-specific keyword coverage.")
+        weaknesses.append("Low keyword alignment with target role")
 
+    # Weaknesses based on missing skills
     if data.missing_skills:
-        weaknesses.extend([f"Missing: {s}" for s in data.missing_skills[:6]])
-        recommendations.append("Learn and add the missing skills listed above; include related projects and keywords.")
+        for skill in data.missing_skills[:5]:
+            weaknesses.append(f"Missing {skill} experience")
 
-    recommendations.append("Quantify achievements (metrics, results) where possible.")
-    recommendations.append("Use consistent formatting and section headers: Experience, Skills, Projects.")
+    # Improvement tips
+    if data.missing_skills:
+        improvement_tips.append(f"Add the following skills: {', '.join(data.missing_skills[:3])}")
+    
+    improvement_tips.append("Include specific projects demonstrating your skills")
+    improvement_tips.append("Quantify achievements with metrics (e.g., '30% performance improvement')")
+    improvement_tips.append("Use ATS-friendly formatting: clear sections, consistent headers")
+    improvement_tips.append("Add relevant certifications and technical keywords")
 
-    summary = "Resume review generated. Focus on matching job skills and quantifying impact."
-
-    overall = " & ".join([
-        "Good match" if data.ats_score and data.ats_score >= 70 else "Needs improvement"
-    ])
+    summary = f"Resume shows {data.ats_score or 50}% match with job requirements. Focus on adding missing skills and quantifying achievements."
 
     return {
         "summary": summary,
         "strengths": strengths,
         "weaknesses": weaknesses,
-        "recommendations": recommendations,
-        "overall_feedback": overall,
+        "improvement_tips": improvement_tips,
     }

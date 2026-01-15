@@ -7,6 +7,9 @@ import { auth } from "../firebase";
 
 import {
   analyzeResumeAI,
+  getATSScore,
+  getSkillGap,
+  getLearningRoadmap,
   saveHistory,
   downloadPDFReport,
 } from "../api";
@@ -16,9 +19,9 @@ export default function ResumeUploader({ selectedHistory }) {
   const [jobDesc, setJobDesc] = useState("");
   const [resumeText, setResumeText] = useState("");
   const [atsScore, setAtsScore] = useState(null);
+  const [matchedSkills, setMatchedSkills] = useState([]);
   const [missingSkills, setMissingSkills] = useState([]);
   const [roadmap, setRoadmap] = useState([]);
-  const [aiResponse, setAiResponse] = useState("");
   const [feedback, setFeedback] = useState([]);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -40,7 +43,7 @@ export default function ResumeUploader({ selectedHistory }) {
     setFile(selected);
   }
 
-  /* ---------------- ANALYZE ---------------- */
+  /* ---------------- ANALYZE (OPTIMIZED) -------------- */
   async function analyzeResume() {
     if (!file || !jobDesc.trim()) {
       setErrorMsg("Please upload a resume and paste job description.");
@@ -56,7 +59,7 @@ export default function ResumeUploader({ selectedHistory }) {
     setErrorMsg("");
     setLoading(true);
 
-    // 1️⃣ Upload Resume (separate - show detailed upload errors)
+    // 1️⃣ Upload Resume
     let parsedText = "";
     try {
       const formData = new FormData();
@@ -94,59 +97,57 @@ export default function ResumeUploader({ selectedHistory }) {
       return;
     }
 
-    // 2️⃣ AI ANALYSIS (SINGLE CALL)
+    // 2️⃣ PARALLEL: ATS Score + Skill Gap (fast rule-based endpoints)
     try {
-      const aiResult = await analyzeResumeAI(parsedText, jobDesc);
-      const safe = aiResult || {};
+      const [atsRes, skillRes] = await Promise.all([
+        getATSScore(parsedText, jobDesc),
+        getSkillGap(parsedText, jobDesc),
+      ]);
 
-      // Only set fields if present to avoid overwriting previous good results
-      if (typeof safe.ats_score !== "undefined") {
-        setAtsScore(Number(safe.ats_score));
-      }
-      if (Array.isArray(safe.missing_skills)) {
-        setMissingSkills(safe.missing_skills);
-      }
-      if (Array.isArray(safe.learning_roadmap)) {
-        setRoadmap(safe.learning_roadmap);
-      }
-      if (Array.isArray(safe.feedback)) {
-        setFeedback(safe.feedback);
-      }
-      if (typeof safe.ai_response !== "undefined") {
-        setAiResponse(safe.ai_response || "");
-      }
+      const score = atsRes?.ats_score || 0;
+      setAtsScore(score);
+      setMatchedSkills(atsRes?.matched_skills || []);
+      setMissingSkills(skillRes?.missing_skills || []);
 
-      // Save history in background; don't allow errors to affect UI
+      // 3️⃣ PARALLEL: Roadmap + Full Analyzer
+      const [roadmapRes, analyzerRes] = await Promise.all([
+        getLearningRoadmap(skillRes?.missing_skills || []),
+        analyzeResumeAI(parsedText, jobDesc),
+      ]);
+
+      setRoadmap(roadmapRes?.learning_roadmap || []);
+      setFeedback(analyzerRes?.feedback || []);
+
+      // Save history in background
       try {
         saveHistory(user.uid, {
-          ats_score: Number(safe.ats_score) || 0,
-          missing_skills: safe.missing_skills || [],
-          roadmap: safe.learning_roadmap || [],
-          feedback: safe.feedback || [],
+          ats_score: score,
+          missing_skills: skillRes?.missing_skills || [],
+          roadmap: roadmapRes?.learning_roadmap || [],
+          feedback: analyzerRes?.feedback || [],
         }).catch((e) => console.error("saveHistory failed:", e));
       } catch (e) {
         console.error("saveHistory error:", e);
       }
-    } catch (aiErr) {
-      console.error("AI analysis error:", aiErr);
-      const msg = aiErr?.message || String(aiErr) || "AI analysis failed";
+    } catch (err) {
+      console.error("Analysis error:", err);
+      const msg = err?.message || String(err) || "Analysis failed";
       setErrorMsg(msg);
-      // keep previous results (do not clear)
       setLoading(false);
       return;
-    } finally {
-      setLoading(false);
     }
+
+    setLoading(false);
   }
 
-  /* ---------------- PDF ---------------- */
+  /* -------- PDF -------- */
   async function handleDownload() {
     try {
       const blob = await downloadPDFReport({
         ats_score: atsScore,
         missing_skills: missingSkills,
         roadmap,
-        ai_summary: aiResponse,
+        ai_summary: feedback.join(" ") || "",
       });
 
       const url = window.URL.createObjectURL(blob);
@@ -160,7 +161,7 @@ export default function ResumeUploader({ selectedHistory }) {
     }
   }
 
-  /* ---------------- UI ---------------- */
+  /* -------- UI -------- */
   return (
     <div className="max-w-5xl mx-auto space-y-8">
       <h1 className="text-4xl font-bold text-purple-400">Analyze Your Resume</h1>
@@ -179,7 +180,7 @@ export default function ResumeUploader({ selectedHistory }) {
           <button
             onClick={analyzeResume}
             disabled={loading}
-            className="mt-4 bg-purple-500 hover:bg-purple-600 px-6 py-3 rounded-xl font-semibold"
+            className="mt-4 bg-purple-500 hover:bg-purple-600 px-6 py-3 rounded-xl font-semibold disabled:opacity-50"
           >
             {loading ? "Analyzing..." : "Analyze Resume"}
           </button>
@@ -200,25 +201,38 @@ export default function ResumeUploader({ selectedHistory }) {
             <div className="bg-white/10 p-6 rounded-xl">
               <h3 className="font-semibold mb-2">Missing Skills</h3>
               <ul className="text-sm text-gray-300">
-                {missingSkills.map((s, i) => (
-                  <li key={i}>• {s}</li>
-                ))}
+                {missingSkills.length > 0 ? (
+                  missingSkills.map((s, i) => (
+                    <li key={i}>• {s}</li>
+                  ))
+                ) : (
+                  <li className="text-gray-500 italic">No missing skills</li>
+                )}
               </ul>
             </div>
 
             <div className="bg-white/10 p-6 rounded-xl">
               <h3 className="font-semibold mb-2">Learning Roadmap</h3>
               <ul className="text-sm text-gray-300">
-                {roadmap.slice(0, 6).map((r, i) => (
-                  <li key={i}>• {r.recommendation}</li>
-                ))}
+                {roadmap && roadmap.length > 0 ? (
+                  roadmap.slice(0, 5).map((r, i) => (
+                    <li key={i} className="mb-1">• {r.skill || r.recommendation}</li>
+                  ))
+                ) : (
+                  <li className="text-gray-500 italic">No learning path needed</li>
+                )}
               </ul>
             </div>
           </div>
 
-          <SkillGapChart skills={missingSkills} />
+          {missingSkills.length > 0 && <SkillGapChart skills={missingSkills} />}
 
-          <SkillRadarChart matchedSkills={roadmap.map((r) => r.skill)} missingSkills={missingSkills} />
+          {roadmap.length > 0 && (
+            <SkillRadarChart
+              matchedSkills={roadmap.map((r) => r.skill).filter(Boolean)}
+              missingSkills={missingSkills}
+            />
+          )}
 
           <AIChat resumeText={resumeText} jobDesc={jobDesc} missingSkills={missingSkills} atsScore={atsScore} />
 

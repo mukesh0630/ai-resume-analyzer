@@ -11,16 +11,16 @@ class RoadmapRequest(BaseModel):
 
 @router.post("/roadmap")
 def generate_roadmap(req: RoadmapRequest):
+    # Return empty roadmap if no missing skills (don't error)
     if not req.missing_skills:
-        raise HTTPException(status_code=400, detail="Missing skills list is empty")
+        return {"learning_roadmap": []}
 
-    # Rule-based short roadmap per skill (no external LLM call)
+    # Rule-based roadmap per skill
     roadmap = []
     for skill in req.missing_skills[:10]:
-        s = skill.capitalize()
         roadmap.append({
             "skill": skill,
-            "recommendation": f"Learn the fundamentals of {s}; follow tutorials, build a small project, and practice with online exercises." 
+            "recommendation": f"Master {skill} fundamentals: study core concepts, follow tutorials, build projects, and practice with real-world exercises."
         })
 
     return {"learning_roadmap": roadmap}
