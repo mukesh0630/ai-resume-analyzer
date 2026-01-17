@@ -115,22 +115,59 @@ export default function ResumeUploader({ selectedHistory }) {
   async function handleDownload() {
     try {
       setErrorMsg("");
-      const blob = await downloadPDFReport({
-        ats_score: atsScore,
-        missing_skills: missingSkills,
+      
+      // Validate data before downloading
+      if (!atsScore && atsScore !== 0) {
+        throw new Error("No ATS score available. Please analyze a resume first.");
+      }
+
+      console.log("🔄 Preparing download with data:", {
+        atsScore,
+        missingSkills,
         roadmap,
-        ai_summary: feedback.join(" ") || "",
+        feedback
       });
 
+      const downloadPayload = {
+        ats_score: atsScore,
+        missing_skills: Array.isArray(missingSkills) ? missingSkills : [],
+        roadmap: Array.isArray(roadmap) ? roadmap.join("\n") : String(roadmap || ""),
+        ai_summary: Array.isArray(feedback) ? feedback.join(" ") : String(feedback || ""),
+      };
+
+      console.log("📤 Download payload:", downloadPayload);
+
+      const blob = await downloadPDFReport(downloadPayload);
+
+      // Create download link
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "AI_Resume_Report.pdf";
-      a.click();
-      window.URL.revokeObjectURL(url);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `AI_Resume_Report_${new Date().getTime()}.pdf`;
+      
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        console.log("✅ Download completed successfully");
+      }, 100);
+      
     } catch (e) {
-      console.error("download error:", e);
-      setErrorMsg(`Download Error: ${e?.message || String(e)}`);
+      console.error("Download error:", e);
+      let errorMessage = e?.message || String(e) || "Download failed";
+      
+      // Handle specific network errors
+      if (errorMessage.includes("Failed to fetch")) {
+        errorMessage = `Network error: The server at ${new URL(import.meta.env.VITE_API_URL || "https://ai-resume-analyzer-0bi6.onrender.com").hostname} is not responding. Please check your internet connection and try again.`;
+      } else if (errorMessage.includes("TypeError")) {
+        errorMessage = `Connection error: Could not reach the server. The Render backend may be loading (can take 1-2 min on free tier).`;
+      }
+      
+      setErrorMsg(errorMessage);
     }
   }
 

@@ -102,10 +102,32 @@ def draw_wrapped_text(c, text, x, y, max_width, line_height=14):
 @app.post("/report/pdf")
 def generate_pdf(data: dict):
     try:
+        # Extract and validate data
         ats_score = data.get("ats_score", 0)
         missing_skills = data.get("missing_skills", [])
-        roadmap_text = data.get("roadmap", "")
-        ai_summary = data.get("ai_summary", "")
+        roadmap_text = data.get("roadmap", "No roadmap provided")
+        ai_summary = data.get("ai_summary", "No summary provided")
+
+        # Ensure they are the right type
+        if isinstance(ats_score, (int, float)):
+            ats_score = float(ats_score)
+        else:
+            ats_score = 0.0
+
+        if not isinstance(missing_skills, list):
+            missing_skills = []
+
+        if isinstance(roadmap_text, list):
+            roadmap_text = "\n".join(str(item) for item in roadmap_text)
+        else:
+            roadmap_text = str(roadmap_text)
+
+        if isinstance(ai_summary, list):
+            ai_summary = " ".join(str(item) for item in ai_summary)
+        else:
+            ai_summary = str(ai_summary)
+
+        print(f"✅ Generating PDF with ATS Score: {ats_score}, Skills: {len(missing_skills)}")
 
         REPORT_DIR = os.path.join(os.getcwd(), "generated_reports")
         os.makedirs(REPORT_DIR, exist_ok=True)
@@ -147,6 +169,8 @@ def generate_pdf(data: dict):
 
         c.save()
 
+        print(f"✅ PDF saved to: {file_path}")
+
         return FileResponse(
             file_path,
             media_type="application/pdf",
@@ -155,5 +179,9 @@ def generate_pdf(data: dict):
         )
     except Exception as e:
         import traceback
+        error_msg = f"PDF generation failed: {str(e)}"
+        print(f"❌ {error_msg}")
         traceback.print_exc()
-        raise Exception(f"PDF generation failed: {str(e)}")
+        # Return error as JSON instead of raising
+        from fastapi import HTTPException
+        raise HTTPException(status_code=500, detail=error_msg)

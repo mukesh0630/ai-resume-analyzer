@@ -180,15 +180,35 @@ export async function analyzeResumeAI(resumeText, jobDescription) {
 // ===============================
 export async function downloadPDFReport(payload) {
   try {
-    console.log("📥 Downloading PDF from:", `${BASE_URL}/report/pdf`);
-    console.log("📦 Payload:", payload);
+    // Validate payload
+    if (!payload || typeof payload !== 'object') {
+      throw new Error("Invalid payload: " + JSON.stringify(payload));
+    }
+
+    const { ats_score, missing_skills, roadmap, ai_summary } = payload;
     
+    console.log("📥 Downloading PDF from:", `${BASE_URL}/report/pdf`);
+    console.log("📦 Validated Payload:", { ats_score, missing_skills, roadmap, ai_summary });
+    
+    // Ensure missing_skills is always an array
+    const validPayload = {
+      ats_score: ats_score || 0,
+      missing_skills: Array.isArray(missing_skills) ? missing_skills : [],
+      roadmap: roadmap || "No roadmap provided",
+      ai_summary: ai_summary || "No summary provided"
+    };
+
+    console.log("✅ Sending to backend:", JSON.stringify(validPayload));
+
     const response = await fetch(`${BASE_URL}/report/pdf`, {
       method: "POST",
+      mode: "cors",
+      credentials: "omit",
       headers: {
         "Content-Type": "application/json",
+        "Accept": "application/pdf",
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(validPayload),
     });
 
     console.log("📡 Response status:", response.status);
@@ -196,15 +216,20 @@ export async function downloadPDFReport(payload) {
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => "No error details");
-      console.error("❌ PDF Generation Error:", errorText);
-      throw new Error(`Failed to generate PDF: ${response.status} ${errorText}`);
+      console.error("❌ PDF Generation Error:", response.status, errorText);
+      throw new Error(`PDF generation failed (${response.status}): ${errorText || response.statusText}`);
     }
 
     const blob = await response.blob();
     console.log("✅ PDF blob received:", blob.size, "bytes");
+    
+    if (blob.size === 0) {
+      throw new Error("Received empty PDF file");
+    }
+    
     return blob;
   } catch (error) {
-    console.error("❌ PDF Download Error:", error.message);
+    console.error("❌ PDF Download Error:", error);
     throw error;
   }
 }
