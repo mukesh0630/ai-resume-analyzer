@@ -7,9 +7,6 @@ import { auth } from "../firebase";
 
 import {
   analyzeResumeAI,
-  getATSScore,
-  getSkillGap,
-  getLearningRoadmap,
   saveHistory,
   downloadPDFReport,
 } from "../api";
@@ -59,9 +56,8 @@ export default function ResumeUploader({ selectedHistory }) {
     setErrorMsg("");
     setLoading(true);
 
-    // 1️⃣ Upload Resume
-    let parsedText = "";
     try {
+      // 1️⃣ Upload Resume
       const formData = new FormData();
       formData.append("file", file);
 
@@ -72,86 +68,47 @@ export default function ResumeUploader({ selectedHistory }) {
 
       if (!uploadRes.ok) {
         const txt = await uploadRes.text().catch(() => "");
-        const msg = `Upload failed: ${uploadRes.status} ${uploadRes.statusText} ${txt}`;
-        console.error(msg);
-        setErrorMsg(msg);
-        setLoading(false);
-        return;
+        throw new Error(`Upload failed: ${uploadRes.status} ${txt}`);
       }
 
       const uploadData = await uploadRes.json();
-      parsedText = uploadData.extracted_text || "";
+      const parsedText = uploadData.extracted_text || "";
+      
       if (!parsedText.trim()) {
-        const msg = "Resume parsing returned empty text.";
-        console.error(msg, uploadData);
-        setErrorMsg(msg);
-        setLoading(false);
-        return;
+        throw new Error("Resume parsing returned empty text");
       }
 
       setResumeText(parsedText);
-    } catch (uploadErr) {
-      console.error("Upload error:", uploadErr);
-      setErrorMsg(uploadErr?.message || String(uploadErr));
-      setLoading(false);
-      return;
-    }
 
-    // 2️⃣ PARALLEL: ATS Score + Skill Gap (fast rule-based endpoints)
-    try {
-      const [atsRes, skillRes] = await Promise.all([
-        getATSScore(parsedText, jobDesc),
-        getSkillGap(parsedText, jobDesc),
-      ]);
+      // 2️⃣ Run Full Analysis (single call returns everything: ats_score, matched_skills, missing_skills, learning_roadmap, feedback)
+      const analysisResult = await analyzeResumeAI(parsedText, jobDesc);
+      
+      // Set all results
+      setAtsScore(analysisResult.ats_score || 0);
+      setMatchedSkills(analysisResult.matched_skills || []);
+      setMissingSkills(analysisResult.missing_skills || []);
+      setRoadmap(analysisResult.learning_roadmap || []);
+      setFeedback(analysisResult.feedback || []);
 
-      const score = atsRes?.ats_score || 0;
-      setAtsScore(score);
-      setMatchedSkills(atsRes?.matched_skills || []);
-      setMissingSkills(skillRes?.missing_skills || []);
-
-      const missingSkillsData = skillRes?.missing_skills || [];
-      let roadmapData = [];
-      let feedbackData = [];
-
-      // 3️⃣ PARALLEL: Roadmap + Full Analyzer (non-critical, set defaults on failure)
-      try {
-        const [roadmapRes, analyzerRes] = await Promise.all([
-          getLearningRoadmap(missingSkillsData),
-          analyzeResumeAI(parsedText, jobDesc),
-        ]);
-
-        roadmapData = roadmapRes?.learning_roadmap || [];
-        feedbackData = analyzerRes?.feedback || [];
-      } catch (roadmapErr) {
-        console.warn("Roadmap/Analyzer fetch failed:", roadmapErr);
-        // Set reasonable defaults so UI still displays
-        roadmapData = [];
-        feedbackData = ["Improve keyword alignment", "Add measurable achievements"];
-      }
-
-      setRoadmap(roadmapData);
-      setFeedback(feedbackData);
-
-      // Save history in background
+      // 3️⃣ Save to Firestore (background, non-critical)
       try {
         saveHistory(user.uid, {
-          ats_score: score,
-          missing_skills: missingSkillsData,
-          roadmap: roadmapData,
-          feedback: feedbackData,
-        }).catch((e) => console.error("saveHistory failed:", e));
-      } catch (e) {
-        console.error("saveHistory error:", e);
+          ats_score: analysisResult.ats_score || 0,
+          missing_skills: analysisResult.missing_skills || [],
+          roadmap: analysisResult.learning_roadmap || [],
+          feedback: analysisResult.feedback || [],
+        }).catch((e) => console.warn("History save failed:", e));
+      } catch (histErr) {
+        console.warn("History save error:", histErr);
       }
+
     } catch (err) {
       console.error("Analysis error:", err);
-      const msg = err?.message || String(err) || "Analysis failed";
-      setErrorMsg(msg);
+      setErrorMsg(err?.message || String(err) || "Analysis failed");
+      setAtsScore(null);
+    } finally {
       setLoading(false);
-      return;
     }
-
-    setLoading(false);
   }
 
   /* -------- PDF -------- */
@@ -229,9 +186,13 @@ export default function ResumeUploader({ selectedHistory }) {
               <h3 className="font-semibold mb-2">Learning Roadmap</h3>
               <ul className="text-sm text-gray-300">
                 {roadmap && roadmap.length > 0 ? (
-                  roadmap.slice(0, 5).map((r, i) => (
-                    <li key={i} className="mb-1">• {r.skill || r.recommendation}</li>
-                  ))
+                  roadmap.slice(0, 5).map((r, i) => {
+                    // Handle both string and object formats
+                    const skillName = typeof r === 'string' ? r : (r.skill || r.recommendation || '');
+                    return (
+                      <li key={i} className="mb-1">• {skillName}</li>
+                    );
+                  })
                 ) : (
                   <li className="text-gray-500 italic">No learning path needed</li>
                 )}

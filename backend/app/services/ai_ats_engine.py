@@ -30,7 +30,14 @@ def analyze_resume_with_ai(resume_text: str, job_description: str, timeout_secs:
     else:
         feedback.append("Good keyword match; emphasize achievements with metrics.")
 
-    roadmap = [f"Learn {s}" for s in missing[:5]]
+    # Convert roadmap to objects with skill and recommendation
+    roadmap = [
+        {
+            "skill": s,
+            "recommendation": f"Master {s} fundamentals: study core concepts, follow tutorials, build projects, and practice with real-world exercises."
+        }
+        for s in missing[:5]
+    ]
 
     return {
         "ats_score": ats_score,

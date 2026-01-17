@@ -10,6 +10,8 @@ except Exception:
 from datetime import datetime
 import os
 import uuid
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
 
 
 # -----------------------------
