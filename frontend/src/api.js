@@ -17,7 +17,7 @@ import {
 // ATS SCORE (RULE-BASED - KEEP)
 // ===============================
 export async function getATSScore(resumeText, jobDescription) {
-  const response = await fetch(`${BASE_URL}/ats/score`, {
+  const response = await fetch (`${BASE_URL}/ats/score`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
