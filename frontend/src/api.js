@@ -179,19 +179,34 @@ export async function analyzeResumeAI(resumeText, jobDescription) {
 // PDF REPORT DOWNLOAD
 // ===============================
 export async function downloadPDFReport(payload) {
-  const response = await fetch(`${BASE_URL}/report/pdf`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
+  try {
+    console.log("📥 Downloading PDF from:", `${BASE_URL}/report/pdf`);
+    console.log("📦 Payload:", payload);
+    
+    const response = await fetch(`${BASE_URL}/report/pdf`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
 
-  if (!response.ok) {
-    throw new Error("Failed to generate PDF");
+    console.log("📡 Response status:", response.status);
+    console.log("📡 Response type:", response.headers.get("content-type"));
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => "No error details");
+      console.error("❌ PDF Generation Error:", errorText);
+      throw new Error(`Failed to generate PDF: ${response.status} ${errorText}`);
+    }
+
+    const blob = await response.blob();
+    console.log("✅ PDF blob received:", blob.size, "bytes");
+    return blob;
+  } catch (error) {
+    console.error("❌ PDF Download Error:", error.message);
+    throw error;
   }
-
-  return await response.blob();
 }
 
 // ---------------- Firestore history helpers ----------------

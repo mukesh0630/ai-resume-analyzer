@@ -114,6 +114,7 @@ export default function ResumeUploader({ selectedHistory }) {
   /* -------- PDF -------- */
   async function handleDownload() {
     try {
+      setErrorMsg("");
       const blob = await downloadPDFReport({
         ats_score: atsScore,
         missing_skills: missingSkills,
@@ -126,9 +127,10 @@ export default function ResumeUploader({ selectedHistory }) {
       a.href = url;
       a.download = "AI_Resume_Report.pdf";
       a.click();
+      window.URL.revokeObjectURL(url);
     } catch (e) {
       console.error("download error:", e);
-      setErrorMsg(e?.message || String(e));
+      setErrorMsg(`Download Error: ${e?.message || String(e)}`);
     }
   }
 
@@ -211,9 +213,14 @@ export default function ResumeUploader({ selectedHistory }) {
 
           <AIChat resumeText={resumeText} jobDesc={jobDesc} missingSkills={missingSkills} atsScore={atsScore} />
 
-          <button onClick={handleDownload} className="bg-green-500 hover:bg-green-600 px-6 py-3 rounded-xl font-semibold">
+          <button 
+            onClick={handleDownload} 
+            disabled={!atsScore}
+            className={`${!atsScore ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600'} px-6 py-3 rounded-xl font-semibold`}
+          >
             Download PDF Report
           </button>
+          {errorMsg && <div className="text-red-400 mt-2">{errorMsg}</div>}
         </>
       )}
     </div>

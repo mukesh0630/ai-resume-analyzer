@@ -101,53 +101,59 @@ def draw_wrapped_text(c, text, x, y, max_width, line_height=14):
 # -----------------------------
 @app.post("/report/pdf")
 def generate_pdf(data: dict):
-    ats_score = data.get("ats_score", 0)
-    missing_skills = data.get("missing_skills", [])
-    roadmap_text = data.get("roadmap", "")
-    ai_summary = data.get("ai_summary", "")
+    try:
+        ats_score = data.get("ats_score", 0)
+        missing_skills = data.get("missing_skills", [])
+        roadmap_text = data.get("roadmap", "")
+        ai_summary = data.get("ai_summary", "")
 
-    REPORT_DIR = os.path.join(os.getcwd(), "generated_reports")
-    os.makedirs(REPORT_DIR, exist_ok=True)
+        REPORT_DIR = os.path.join(os.getcwd(), "generated_reports")
+        os.makedirs(REPORT_DIR, exist_ok=True)
 
-    filename = f"resume_report_{uuid.uuid4()}.pdf"
-    file_path = os.path.join(REPORT_DIR, filename)
+        filename = f"resume_report_{uuid.uuid4()}.pdf"
+        file_path = os.path.join(REPORT_DIR, filename)
 
-    c = canvas.Canvas(file_path, pagesize=A4)
-    width, height = A4
+        c = canvas.Canvas(file_path, pagesize=A4)
+        width, height = A4
 
-    y = height - 50
-    c.setFont("Helvetica-Bold", 16)
-    c.drawString(50, y, "AI Resume Analysis Report")
+        y = height - 50
+        c.setFont("Helvetica-Bold", 16)
+        c.drawString(50, y, "AI Resume Analysis Report")
 
-    y -= 40
-    c.setFont("Helvetica", 12)
-    c.drawString(50, y, f"ATS Score: {ats_score:.2f}%")
+        y -= 40
+        c.setFont("Helvetica", 12)
+        c.drawString(50, y, f"ATS Score: {ats_score:.2f}%")
 
-    y -= 30
-    c.drawString(50, y, "Missing Skills:")
-    for skill in missing_skills:
-        y -= 18
-        c.drawString(70, y, f"- {skill}")
+        y -= 30
+        c.drawString(50, y, "Missing Skills:")
+        for skill in missing_skills:
+            y -= 18
+            c.drawString(70, y, f"- {skill}")
 
-    y -= 30
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(50, y, "Learning Roadmap:")
-    y -= 20
-    c.setFont("Helvetica", 10)
-    y = draw_wrapped_text(c, roadmap_text, 50, y, width - 100)
+        y -= 30
+        c.setFont("Helvetica-Bold", 12)
+        c.drawString(50, y, "Learning Roadmap:")
+        y -= 20
+        c.setFont("Helvetica", 10)
+        y = draw_wrapped_text(c, roadmap_text, 50, y, width - 100)
 
-    y -= 30
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(50, y, "AI Career Assistant Summary:")
+        y -= 30
+        c.setFont("Helvetica-Bold", 12)
+        c.drawString(50, y, "AI Career Assistant Summary:")
 
-    y -= 20
-    c.setFont("Helvetica", 10)
-    y = draw_wrapped_text(c, ai_summary, 50, y, width - 100)
+        y -= 20
+        c.setFont("Helvetica", 10)
+        y = draw_wrapped_text(c, ai_summary, 50, y, width - 100)
 
-    c.save()
+        c.save()
 
-    return FileResponse(
-        file_path,
-        media_type="application/pdf",
-        filename="AI_Resume_Report.pdf"
-    )
+        return FileResponse(
+            file_path,
+            media_type="application/pdf",
+            filename="AI_Resume_Report.pdf",
+            headers={"Content-Disposition": "attachment; filename=AI_Resume_Report.pdf"}
+        )
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise Exception(f"PDF generation failed: {str(e)}")
