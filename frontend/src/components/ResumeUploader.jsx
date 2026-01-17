@@ -83,24 +83,12 @@ export default function ResumeUploader({ selectedHistory }) {
       // 2️⃣ Run Full Analysis (single call returns everything: ats_score, matched_skills, missing_skills, learning_roadmap, feedback)
       const analysisResult = await analyzeResumeAI(parsedText, jobDesc);
       
-      console.log("=== ANALYSIS RESULT ===");
-      console.log("Full response:", analysisResult);
-      console.log("ATS Score:", analysisResult.ats_score);
-      console.log("Missing Skills:", analysisResult.missing_skills);
-      console.log("Learning Roadmap:", analysisResult.learning_roadmap);
-      console.log("Roadmap type:", typeof analysisResult.learning_roadmap);
-      console.log("Roadmap length:", analysisResult.learning_roadmap?.length);
-      console.log("Feedback:", analysisResult.feedback);
-      console.log("=======================");
-      
       // Set all results
       setAtsScore(analysisResult.ats_score || 0);
       setMatchedSkills(analysisResult.matched_skills || []);
       setMissingSkills(analysisResult.missing_skills || []);
       setRoadmap(analysisResult.learning_roadmap || []);
       setFeedback(analysisResult.feedback || []);
-      
-      console.log("State updated - roadmap set to:", analysisResult.learning_roadmap || []);
 
       // 3️⃣ Save to Firestore (background, non-critical)
       try {
@@ -128,13 +116,6 @@ export default function ResumeUploader({ selectedHistory }) {
     try {
       setErrorMsg("");
       
-      console.log("=== DOWNLOAD INITIATED ===");
-      console.log("Current state - atsScore:", atsScore);
-      console.log("Current state - roadmap:", roadmap);
-      console.log("Current state - roadmap length:", roadmap?.length);
-      console.log("Current state - feedback:", feedback);
-      console.log("Current state - missingSkills:", missingSkills);
-      
       // Validate data before downloading
       if (!atsScore && atsScore !== 0) {
         throw new Error("No ATS score available. Please analyze a resume first.");
@@ -142,16 +123,12 @@ export default function ResumeUploader({ selectedHistory }) {
 
       // Check if we have enough data
       if (!roadmap || roadmap.length === 0) {
-        console.warn("ROADMAP IS EMPTY:", roadmap);
         throw new Error("Roadmap data is missing. Please analyze a resume first.");
       }
 
       if (!feedback || feedback.length === 0) {
-        console.warn("FEEDBACK IS EMPTY:", feedback);
         throw new Error("AI insights are missing. Please analyze a resume first.");
       }
-
-      console.log("All validation passed");
 
       const downloadPayload = {
         ats_score: atsScore,
@@ -159,12 +136,6 @@ export default function ResumeUploader({ selectedHistory }) {
         roadmap: Array.isArray(roadmap) ? roadmap : [],
         ai_summary: Array.isArray(feedback) ? feedback : [],
       };
-
-      console.log("=== SENDING TO PDF ===");
-      console.log("Full payload:", downloadPayload);
-      console.log("Roadmap items:", downloadPayload.roadmap);
-      console.log("AI Summary items:", downloadPayload.ai_summary);
-      console.log("=====================");
 
       const blob = await downloadPDFReport(downloadPayload);
 

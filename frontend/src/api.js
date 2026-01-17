@@ -182,23 +182,18 @@ export async function downloadPDFReport(payload) {
   try {
     // Validate payload
     if (!payload || typeof payload !== 'object') {
-      throw new Error("Invalid payload: " + JSON.stringify(payload));
+      throw new Error("Invalid payload");
     }
 
     const { ats_score, missing_skills, roadmap, ai_summary } = payload;
     
-    console.log("📥 Downloading PDF from:", `${BASE_URL}/report/pdf`);
-    console.log("📦 Validated Payload:", { ats_score, missing_skills, roadmap, ai_summary });
-    
-    // Ensure missing_skills is always an array
+    // Ensure data is in correct format
     const validPayload = {
       ats_score: ats_score || 0,
       missing_skills: Array.isArray(missing_skills) ? missing_skills : [],
-      roadmap: roadmap || "No roadmap provided",
-      ai_summary: ai_summary || "No summary provided"
+      roadmap: roadmap || [],
+      ai_summary: ai_summary || []
     };
-
-    console.log("✅ Sending to backend:", JSON.stringify(validPayload));
 
     const response = await fetch(`${BASE_URL}/report/pdf`, {
       method: "POST",
@@ -211,17 +206,12 @@ export async function downloadPDFReport(payload) {
       body: JSON.stringify(validPayload),
     });
 
-    console.log("📡 Response status:", response.status);
-    console.log("📡 Response type:", response.headers.get("content-type"));
-
     if (!response.ok) {
       const errorText = await response.text().catch(() => "No error details");
-      console.error("❌ PDF Generation Error:", response.status, errorText);
       throw new Error(`PDF generation failed (${response.status}): ${errorText || response.statusText}`);
     }
 
     const blob = await response.blob();
-    console.log("✅ PDF blob received:", blob.size, "bytes");
     
     if (blob.size === 0) {
       throw new Error("Received empty PDF file");
@@ -229,7 +219,6 @@ export async function downloadPDFReport(payload) {
     
     return blob;
   } catch (error) {
-    console.error("❌ PDF Download Error:", error);
     throw error;
   }
 }
