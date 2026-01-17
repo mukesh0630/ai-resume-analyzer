@@ -83,6 +83,8 @@ export default function ResumeUploader({ selectedHistory }) {
       // 2️⃣ Run Full Analysis (single call returns everything: ats_score, matched_skills, missing_skills, learning_roadmap, feedback)
       const analysisResult = await analyzeResumeAI(parsedText, jobDesc);
       
+      console.log("Analysis Result:", analysisResult);
+      
       // Set all results
       setAtsScore(analysisResult.ats_score || 0);
       setMatchedSkills(analysisResult.matched_skills || []);
@@ -121,11 +123,20 @@ export default function ResumeUploader({ selectedHistory }) {
         throw new Error("No ATS score available. Please analyze a resume first.");
       }
 
-      console.log("🔄 Preparing download with data:", {
+      // Check if we have enough data
+      if (!roadmap || roadmap.length === 0) {
+        throw new Error("Roadmap data is missing. Please analyze a resume first.");
+      }
+
+      if (!feedback || feedback.length === 0) {
+        throw new Error("AI insights are missing. Please analyze a resume first.");
+      }
+
+      console.log("Preparing download with data:", {
         atsScore,
-        missingSkills,
-        roadmap,
-        feedback
+        missingSkills: missingSkills.length,
+        roadmap: roadmap.length,
+        feedback: feedback.length
       });
 
       const downloadPayload = {
@@ -135,7 +146,9 @@ export default function ResumeUploader({ selectedHistory }) {
         ai_summary: Array.isArray(feedback) ? feedback : [],
       };
 
-      console.log("📤 Download payload:", downloadPayload);
+      console.log("PDF Download Payload:", downloadPayload);
+      console.log("Roadmap items:", downloadPayload.roadmap.length);
+      console.log("AI Summary items:", downloadPayload.ai_summary.length);
 
       const blob = await downloadPDFReport(downloadPayload);
 
@@ -153,7 +166,7 @@ export default function ResumeUploader({ selectedHistory }) {
       setTimeout(() => {
         document.body.removeChild(link);
         window.URL.revokeObjectURL(url);
-        console.log("✅ Download completed successfully");
+        console.log("Download completed successfully");
       }, 100);
       
     } catch (e) {
@@ -162,9 +175,9 @@ export default function ResumeUploader({ selectedHistory }) {
       
       // Handle specific network errors
       if (errorMessage.includes("Failed to fetch")) {
-        errorMessage = `Network error: The server at ${new URL(import.meta.env.VITE_API_URL || "https://ai-resume-analyzer-0bi6.onrender.com").hostname} is not responding. Please check your internet connection and try again.`;
+        errorMessage = `Network error: The server is not responding. Please check your internet connection and try again.`;
       } else if (errorMessage.includes("TypeError")) {
-        errorMessage = `Connection error: Could not reach the server. The Render backend may be loading (can take 1-2 min on free tier).`;
+        errorMessage = `Connection error: Could not reach the server. Please try again in a few seconds.`;
       }
       
       setErrorMsg(errorMessage);

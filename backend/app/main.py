@@ -108,6 +108,12 @@ def generate_pdf(data: dict):
         roadmap_data = data.get("roadmap", [])
         ai_summary_data = data.get("ai_summary", [])
 
+        print(f"PDF Generation Request:")
+        print(f"  ATS Score: {ats_score}")
+        print(f"  Missing Skills: {missing_skills}")
+        print(f"  Roadmap Items: {len(roadmap_data)} items")
+        print(f"  AI Summary Items: {len(ai_summary_data)} items")
+
         # Ensure they are the right type
         if isinstance(ats_score, (int, float)):
             ats_score = float(ats_score)
@@ -122,8 +128,6 @@ def generate_pdf(data: dict):
 
         if not isinstance(ai_summary_data, list):
             ai_summary_data = []
-
-        print(f"Generating PDF with ATS Score: {ats_score}, Skills: {len(missing_skills)}")
 
         REPORT_DIR = os.path.join(os.getcwd(), "generated_reports")
         os.makedirs(REPORT_DIR, exist_ok=True)
