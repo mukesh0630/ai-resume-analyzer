@@ -131,8 +131,8 @@ export default function ResumeUploader({ selectedHistory }) {
       const downloadPayload = {
         ats_score: atsScore,
         missing_skills: Array.isArray(missingSkills) ? missingSkills : [],
-        roadmap: Array.isArray(roadmap) ? roadmap.join("\n") : String(roadmap || ""),
-        ai_summary: Array.isArray(feedback) ? feedback.join(" ") : String(feedback || ""),
+        roadmap: Array.isArray(roadmap) ? roadmap : [],
+        ai_summary: Array.isArray(feedback) ? feedback : [],
       };
 
       console.log("📤 Download payload:", downloadPayload);

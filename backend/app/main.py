@@ -105,8 +105,8 @@ def generate_pdf(data: dict):
         # Extract and validate data
         ats_score = data.get("ats_score", 0)
         missing_skills = data.get("missing_skills", [])
-        roadmap_text = data.get("roadmap", "No roadmap provided")
-        ai_summary = data.get("ai_summary", "No summary provided")
+        roadmap_data = data.get("roadmap", [])
+        ai_summary_data = data.get("ai_summary", [])
 
         # Ensure they are the right type
         if isinstance(ats_score, (int, float)):
@@ -117,17 +117,13 @@ def generate_pdf(data: dict):
         if not isinstance(missing_skills, list):
             missing_skills = []
 
-        if isinstance(roadmap_text, list):
-            roadmap_text = "\n".join(str(item) for item in roadmap_text)
-        else:
-            roadmap_text = str(roadmap_text)
+        if not isinstance(roadmap_data, list):
+            roadmap_data = []
 
-        if isinstance(ai_summary, list):
-            ai_summary = " ".join(str(item) for item in ai_summary)
-        else:
-            ai_summary = str(ai_summary)
+        if not isinstance(ai_summary_data, list):
+            ai_summary_data = []
 
-        print(f"✅ Generating PDF with ATS Score: {ats_score}, Skills: {len(missing_skills)}")
+        print(f"Generating PDF with ATS Score: {ats_score}, Skills: {len(missing_skills)}")
 
         REPORT_DIR = os.path.join(os.getcwd(), "generated_reports")
         os.makedirs(REPORT_DIR, exist_ok=True)
@@ -142,34 +138,74 @@ def generate_pdf(data: dict):
         c.setFont("Helvetica-Bold", 16)
         c.drawString(50, y, "AI Resume Analysis Report")
 
+        # ATS Score
         y -= 40
         c.setFont("Helvetica", 12)
-        c.drawString(50, y, f"ATS Score: {ats_score:.2f}%")
+        c.drawString(50, y, f"ATS Score: {ats_score:.1f}%")
 
+        # Missing Skills Section
         y -= 30
+        c.setFont("Helvetica-Bold", 12)
         c.drawString(50, y, "Missing Skills:")
-        for skill in missing_skills:
-            y -= 18
-            c.drawString(70, y, f"- {skill}")
+        y -= 18
+        c.setFont("Helvetica", 10)
+        
+        if missing_skills:
+            for skill in missing_skills:
+                skill_name = str(skill).strip()
+                c.drawString(70, y, f"- {skill_name}")
+                y -= 16
+        else:
+            c.drawString(70, y, "No missing skills identified")
+            y -= 16
 
-        y -= 30
+        # Learning Roadmap Section
+        y -= 15
         c.setFont("Helvetica-Bold", 12)
         c.drawString(50, y, "Learning Roadmap:")
-        y -= 20
+        y -= 18
         c.setFont("Helvetica", 10)
-        y = draw_wrapped_text(c, roadmap_text, 50, y, width - 100)
+        
+        if roadmap_data:
+            for item in roadmap_data:
+                # Handle both dict and string items
+                if isinstance(item, dict):
+                    skill = item.get("skill", "Unknown")
+                    recommendation = item.get("recommendation", "")
+                    c.setFont("Helvetica-Bold", 10)
+                    c.drawString(70, y, f"{skill}:")
+                    y -= 15
+                    c.setFont("Helvetica", 9)
+                    y = draw_wrapped_text(c, f"→ {recommendation}", 90, y, width - 140, line_height=13)
+                    y -= 10
+                else:
+                    # Handle string items
+                    c.drawString(70, y, f"• {str(item)}")
+                    y -= 16
+        else:
+            c.drawString(70, y, "No roadmap data available")
+            y -= 16
 
-        y -= 30
+        # AI Career Insights Section
+        y -= 15
         c.setFont("Helvetica-Bold", 12)
-        c.drawString(50, y, "AI Career Assistant Summary:")
-
-        y -= 20
+        c.drawString(50, y, "AI Career Insights:")
+        y -= 18
         c.setFont("Helvetica", 10)
-        y = draw_wrapped_text(c, ai_summary, 50, y, width - 100)
+        
+        if ai_summary_data:
+            for insight in ai_summary_data:
+                insight_text = str(insight).strip()
+                if insight_text:
+                    y = draw_wrapped_text(c, f"• {insight_text}", 70, y, width - 120, line_height=12)
+                    y -= 5
+        else:
+            c.drawString(70, y, "No insights available")
+            y -= 16
 
         c.save()
 
-        print(f"✅ PDF saved to: {file_path}")
+        print(f"PDF saved to: {file_path}")
 
         return FileResponse(
             file_path,
@@ -180,8 +216,7 @@ def generate_pdf(data: dict):
     except Exception as e:
         import traceback
         error_msg = f"PDF generation failed: {str(e)}"
-        print(f"❌ {error_msg}")
+        print(f"Error: {error_msg}")
         traceback.print_exc()
-        # Return error as JSON instead of raising
         from fastapi import HTTPException
         raise HTTPException(status_code=500, detail=error_msg)
