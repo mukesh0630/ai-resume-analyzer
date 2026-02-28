@@ -88,9 +88,6 @@ export default function ResumeUploader({ selectedHistory }) {
       // 2️⃣ Run Full Analysis (single call returns everything: ats_score, matched_skills, missing_skills, learning_roadmap, feedback)
       const analysisResult = await analyzeResumeAI(parsedText, jobDesc);
       
-      // Debug: Log the response
-      console.log("Analysis Result:", analysisResult);
-      
       // Set all results
       setAtsScore(analysisResult.ats_score || 0);
       setMatchedSkills(analysisResult.matched_skills || []);
