@@ -128,10 +128,10 @@ export async function askResumeAI(
 }
 
 // ===============================
-// ✅ AI-BASED FULL RESUME ANALYSIS
+// ✅ COMPREHENSIVE ATS ANALYSIS (NEW)
 // ===============================
 export async function analyzeResumeAI(resumeText, jobDescription) {
-  const url = `${BASE_URL}/ats/analyze`;
+  const url = `${BASE_URL}/analyze/comprehensive`;
   
   try {
     const response = await fetch(url, {
@@ -150,14 +150,25 @@ export async function analyzeResumeAI(resumeText, jobDescription) {
 
     const data = await response.json();
     
+    // Extract matched skills and missing skills from analysis
+    const matchedSkills = data.skill_analysis?.matched_skills || [];
+    const missingSkills = data.skill_analysis?.missing_skills || [];
+    const partialMatches = data.skill_analysis?.partial_matches || [];
+    
     // Normalize response to match frontend expectations
     return {
-      ats_score: data.ats_score || 0,
-      matched_skills: data.matched_skills || [],
-      missing_skills: data.missing_skills || [],
-      learning_roadmap: data.roadmap || [],
-      feedback: data.feedback || [],
-      ai_response: (Array.isArray(data.feedback) ? data.feedback.join(" ") : ""),
+      ats_score: data.overall_score || 0,
+      matched_skills: matchedSkills,
+      missing_skills: missingSkills,
+      partial_match_skills: partialMatches,
+      learning_roadmap: data.improvements_priority || [],
+      feedback: Object.values(data.insights || {}),
+      score_breakdown: data.score_breakdown || {},
+      skill_analysis: data.skill_analysis || {},
+      experience_analysis: data.experience_analysis || {},
+      formatting_issues: data.formatting_issues || [],
+      resume_level: data.resume_level || "Beginner",
+      visualization_data: data.visualization_data || {},
     };
   } catch (err) {
     throw new Error(`AI resume analysis failed: ${err?.message || String(err)}`);

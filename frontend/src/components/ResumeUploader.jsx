@@ -92,8 +92,11 @@ export default function ResumeUploader({ selectedHistory }) {
       setAtsScore(analysisResult.ats_score || 0);
       setMatchedSkills(analysisResult.matched_skills || []);
       setMissingSkills(analysisResult.missing_skills || []);
+      setPartialMatchSkills(analysisResult.partial_match_skills || []);
       setRoadmap(analysisResult.learning_roadmap || []);
       setFeedback(analysisResult.feedback || []);
+      setScoreBreakdown(analysisResult.score_breakdown || {});
+      setInsights(analysisResult.insights || {});
 
       // 3️⃣ Save to Firestore (background, non-critical)
       try {
