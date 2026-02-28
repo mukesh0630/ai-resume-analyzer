@@ -37,9 +37,13 @@ export default function AIChat({
 
           {showInsights && (
             <div className="mt-4 space-y-6 text-gray-300 text-sm">
-              <p className="text-sm text-gray-400 mb-4">
-                Based on your comprehensive analysis (Score: <strong>{Math.round(atsScore)}/100</strong>)
-              </p>
+              <div className="bg-gray-800/50 border border-gray-600 rounded-lg p-4 mb-4">
+                <p className="text-sm text-gray-300">
+                  <span className="text-purple-400 font-semibold">ATS Analysis Score:</span>{" "}
+                  <strong className="text-2xl text-white">{Math.round(atsScore)}</strong>
+                  <span className="text-gray-400">/100</span>
+                </p>
+              </div>
 
               {aiData.ai_insights && (
                 <div className="bg-purple-900/30 border border-purple-500/50 rounded-lg p-4">

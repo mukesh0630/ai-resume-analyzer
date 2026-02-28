@@ -86,12 +86,12 @@ export default function DashboardHome() {
       {/* ---------------- QUICK STATS ---------------- */}
       <div className="grid md:grid-cols-3 gap-6">
 
-        <StatBox title="ATS Compatibility">
+        <StatBox title="ATS Analysis Score">
           <p className="text-4xl font-bold text-purple-400">
             {avgATS}%
           </p>
           <p className="text-sm text-gray-400 mt-2">
-            Average ATS score
+            Average from your analyses
           </p>
         </StatBox>
 
