@@ -241,10 +241,21 @@ export async function saveHistory(userId, payload) {
   if (!userId) return;
   try {
     const col = collection(db, "users", userId, "history");
-    await addDoc(col, {
-      ...payload,
+    
+    // Flatten the payload - Firestore doesn't support nested arrays
+    const flatPayload = {
+      ats_score: payload.ats_score || 0,
+      missing_skills_count: Array.isArray(payload.missing_skills) ? payload.missing_skills.length : 0,
+      matched_skills_count: Array.isArray(payload.matched_skills) ? payload.matched_skills.length : 0,
+      roadmap_count: Array.isArray(payload.roadmap) ? payload.roadmap.length : 0,
+      feedback_count: Array.isArray(payload.feedback) ? payload.feedback.length : 0,
+      // Store as comma-separated strings
+      missing_skills_str: Array.isArray(payload.missing_skills) ? payload.missing_skills.slice(0, 10).join(", ") : "",
+      matched_skills_str: Array.isArray(payload.matched_skills) ? payload.matched_skills.slice(0, 10).join(", ") : "",
       created_at: serverTimestamp(),
-    });
+    };
+    
+    await addDoc(col, flatPayload);
   } catch (err) {
     console.error("saveHistory error:", err);
     // Don't throw — history save should not break the main flow

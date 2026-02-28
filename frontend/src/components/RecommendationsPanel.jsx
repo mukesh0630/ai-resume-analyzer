@@ -66,7 +66,21 @@ export default function RecommendationsPanel({
         <div className="space-y-3">
           {prioritizedRecs.length > 0 ? (
             prioritizedRecs.map((rec, i) => {
+              // Handle various data formats
+              let title = "";
+              let description = "";
+              let timeframe = "";
+              
+              if (typeof rec === "string") {
+                title = rec;
+              } else if (rec && typeof rec === "object") {
+                title = rec.title || rec.recommendation || rec.action || rec.step || JSON.stringify(rec).substring(0, 100);
+                description = rec.description || rec.reason || "";
+                timeframe = rec.timeframe || rec.duration || "";
+              }
+              
               const priority = priorityLevels[rec.priority] || priorityLevels.low;
+              
               return (
                 <div 
                   key={i} 
@@ -76,14 +90,14 @@ export default function RecommendationsPanel({
                     <span className="text-2xl mt-0.5">{priority.icon}</span>
                     <div className="flex-1">
                       <h5 className={`font-bold text-${priority.color}-300 mb-1`}>
-                        {rec.title || rec}
+                        {title}
                       </h5>
-                      {rec.description && (
-                        <p className="text-sm text-gray-300 mb-2">{rec.description}</p>
+                      {description && (
+                        <p className="text-sm text-gray-300 mb-2">{description}</p>
                       )}
-                      {rec.timeframe && (
+                      {timeframe && (
                         <p className="text-xs text-gray-400">
-                          ⏱️ Expected timeline: <strong>{rec.timeframe}</strong>
+                          ⏱️ Timeline: <strong>{timeframe}</strong>
                         </p>
                       )}
                     </div>
@@ -104,32 +118,47 @@ export default function RecommendationsPanel({
         <div className="mb-6">
           <h4 className="text-lg font-bold text-white mb-4">📋 Your Action Plan</h4>
           <div className="space-y-0">
-            {nextSteps.map((step, i) => (
-              <div 
-                key={i}
-                className={`flex gap-4 p-4 ${i !== nextSteps.length - 1 ? 'border-b border-gray-600' : ''}`}
-              >
-                <div className="flex flex-col items-center">
-                  <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm">
-                    {i + 1}
-                  </div>
-                  {i !== nextSteps.length - 1 && (
-                    <div className="w-1 h-12 bg-blue-600 mt-2"></div>
-                  )}
-                </div>
-                <div className="flex-1 pt-1">
-                  <h5 className="font-semibold text-white mb-1">{step.title || step}</h5>
-                  {step.description && (
-                    <p className="text-sm text-gray-400 mb-2">{step.description}</p>
-                  )}
-                  {step.resources && (
-                    <div className="text-xs text-blue-400">
-                      📚 Resources: <span className="text-gray-300">{step.resources}</span>
+            {nextSteps.map((step, i) => {
+              // Handle various data formats
+              let title = "";
+              let description = "";
+              let resources = "";
+              
+              if (typeof step === "string") {
+                title = step;
+              } else if (step && typeof step === "object") {
+                title = step.title || step.step || step.recommendation || step.action || JSON.stringify(step).substring(0, 100);
+                description = step.description || step.reason || "";
+                resources = step.resources || step.resource || "";
+              }
+              
+              return (
+                <div 
+                  key={i}
+                  className={`flex gap-4 p-4 ${i !== nextSteps.length - 1 ? 'border-b border-gray-600' : ''}`}
+                >
+                  <div className="flex flex-col items-center">
+                    <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm">
+                      {i + 1}
                     </div>
-                  )}
+                    {i !== nextSteps.length - 1 && (
+                      <div className="w-1 h-12 bg-blue-600 mt-2"></div>
+                    )}
+                  </div>
+                  <div className="flex-1 pt-1">
+                    <h5 className="font-semibold text-white mb-1">{title}</h5>
+                    {description && (
+                      <p className="text-sm text-gray-400 mb-2">{description}</p>
+                    )}
+                    {resources && (
+                      <div className="text-xs text-blue-400">
+                        📚 Resources: <span className="text-gray-300">{resources}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
