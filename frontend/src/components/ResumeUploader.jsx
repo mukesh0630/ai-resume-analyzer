@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import ATSScoreRing from "./ATSScoreRing";
-import SkillGapChart from "./SkillGapChart";
+import ScoreBreakdownChart from "./ScoreBreakdownChart";
+import SkillMatchOverview from "./SkillMatchOverview";
+import RecommendationsPanel from "./RecommendationsPanel";
+import CandidateLevelCard from "./CandidateLevelCard";
 import AIChat from "./AIChat";
-import SkillRadarChart from "./SkillRadarChart";
 import { auth } from "../firebase";
 
 import {
@@ -18,8 +20,11 @@ export default function ResumeUploader({ selectedHistory }) {
   const [atsScore, setAtsScore] = useState(null);
   const [matchedSkills, setMatchedSkills] = useState([]);
   const [missingSkills, setMissingSkills] = useState([]);
+  const [partialMatchSkills, setPartialMatchSkills] = useState([]);
   const [roadmap, setRoadmap] = useState([]);
   const [feedback, setFeedback] = useState([]);
+  const [scoreBreakdown, setScoreBreakdown] = useState(null);
+  const [insights, setInsights] = useState(null);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -239,12 +244,25 @@ export default function ResumeUploader({ selectedHistory }) {
             </div>
           </div>
 
-          {missingSkills.length > 0 && <SkillGapChart skills={missingSkills} />}
-
-          {roadmap.length > 0 && (
-            <SkillRadarChart
-              matchedSkills={roadmap.map((r) => r.skill).filter(Boolean)}
+          {missingSkills.length > 0 && (
+            <SkillMatchOverview 
+              matchedSkills={matchedSkills}
               missingSkills={missingSkills}
+              partialMatchSkills={partialMatchSkills}
+            />
+          )}
+
+          {scoreBreakdown && <ScoreBreakdownChart scoreBreakdown={scoreBreakdown} />}
+
+          <CandidateLevelCard score={Math.round(atsScore)} />
+
+          {(feedback.length > 0 || roadmap.length > 0) && (
+            <RecommendationsPanel 
+              recommendations={feedback}
+              nextSteps={roadmap}
+              overallScore={Math.round(atsScore)}
+              strengths={matchedSkills.slice(0, 5)}
+              weaknesses={missingSkills.slice(0, 5)}
             />
           )}
 
