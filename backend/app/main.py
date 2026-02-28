@@ -55,6 +55,7 @@ from backend.app.routes import (
     skill_gap,
     roadmap,
     feedback,
+    analyze,
 )
 
 
@@ -66,6 +67,7 @@ app.include_router(ai_ats.router)
 app.include_router(ai.router)
 app.include_router(history.router)
 app.include_router(feedback.router)
+app.include_router(analyze.router)
 
 # -----------------------------
 # Health Check
