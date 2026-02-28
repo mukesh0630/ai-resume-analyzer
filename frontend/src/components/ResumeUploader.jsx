@@ -88,6 +88,9 @@ export default function ResumeUploader({ selectedHistory }) {
       // 2️⃣ Run Full Analysis (single call returns everything: ats_score, matched_skills, missing_skills, learning_roadmap, feedback)
       const analysisResult = await analyzeResumeAI(parsedText, jobDesc);
       
+      // Debug: Log the response
+      console.log("Analysis Result:", analysisResult);
+      
       // Set all results
       setAtsScore(analysisResult.ats_score || 0);
       setMatchedSkills(analysisResult.matched_skills || []);
@@ -247,7 +250,7 @@ export default function ResumeUploader({ selectedHistory }) {
             </div>
           </div>
 
-          {missingSkills.length > 0 && (
+          {(matchedSkills.length > 0 || missingSkills.length > 0) && (
             <SkillMatchOverview 
               matchedSkills={matchedSkills}
               missingSkills={missingSkills}
@@ -255,19 +258,19 @@ export default function ResumeUploader({ selectedHistory }) {
             />
           )}
 
-          {scoreBreakdown && <ScoreBreakdownChart scoreBreakdown={scoreBreakdown} />}
-
-          <CandidateLevelCard score={Math.round(atsScore)} />
-
-          {(feedback.length > 0 || roadmap.length > 0) && (
-            <RecommendationsPanel 
-              recommendations={feedback}
-              nextSteps={roadmap}
-              overallScore={Math.round(atsScore)}
-              strengths={matchedSkills.slice(0, 5)}
-              weaknesses={missingSkills.slice(0, 5)}
-            />
+          {Object.keys(scoreBreakdown || {}).length > 0 && (
+            <ScoreBreakdownChart scoreBreakdown={scoreBreakdown} />
           )}
+
+          {atsScore !== null && <CandidateLevelCard score={Math.round(atsScore)} />}
+
+          <RecommendationsPanel 
+            recommendations={feedback}
+            nextSteps={roadmap}
+            overallScore={atsScore !== null ? Math.round(atsScore) : 0}
+            strengths={matchedSkills.slice(0, 5)}
+            weaknesses={missingSkills.slice(0, 5)}
+          />
 
           <AIChat resumeText={resumeText} jobDesc={jobDesc} missingSkills={missingSkills} atsScore={atsScore} />
 
