@@ -88,15 +88,15 @@ export default function ResumeUploader({ selectedHistory }) {
       // 2️⃣ Run Full Analysis (single call returns everything: ats_score, matched_skills, missing_skills, learning_roadmap, feedback)
       const analysisResult = await analyzeResumeAI(parsedText, jobDesc);
       
-      // Set all results
+      // Set all results from comprehensive analysis
       setAtsScore(analysisResult.ats_score || 0);
       setMatchedSkills(analysisResult.matched_skills || []);
       setMissingSkills(analysisResult.missing_skills || []);
       setPartialMatchSkills(analysisResult.partial_match_skills || []);
       setRoadmap(analysisResult.learning_roadmap || []);
       setFeedback(analysisResult.feedback || []);
-      setScoreBreakdown(analysisResult.score_breakdown || {});
-      setInsights(analysisResult.insights || {});
+      setScoreBreakdown(analysisResult.score_breakdown || null);
+      setInsights(analysisResult.insights || null);
 
       // 3️⃣ Save to Firestore (background, non-critical)
       try {

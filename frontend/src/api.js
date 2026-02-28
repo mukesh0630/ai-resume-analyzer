@@ -161,13 +161,15 @@ export async function analyzeResumeAI(resumeText, jobDescription) {
       matched_skills: matchedSkills,
       missing_skills: missingSkills,
       partial_match_skills: partialMatches,
-      learning_roadmap: data.improvements_priority || [],
-      feedback: Object.values(data.insights || {}),
+      learning_roadmap: data.insights?.next_steps || [],
+      feedback: data.insights?.actionable_recommendations || [],
       score_breakdown: data.score_breakdown || {},
+      improvements_priority: data.improvements_priority || [],
       skill_analysis: data.skill_analysis || {},
       experience_analysis: data.experience_analysis || {},
       formatting_issues: data.formatting_issues || [],
       resume_level: data.resume_level || "Beginner",
+      insights: data.insights || {},
       visualization_data: data.visualization_data || {},
     };
   } catch (err) {

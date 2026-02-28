@@ -10,20 +10,6 @@ export default function RecommendationsPanel({
   strengths = [],
   weaknesses = []
 }) {
-  // Prioritize recommendations by urgency
-  const priorityLevels = {
-    critical: { color: 'red', icon: '🔴', label: 'Critical' },
-    high: { color: 'orange', icon: '🟠', label: 'High Priority' },
-    medium: { color: 'yellow', icon: '🟡', label: 'Medium Priority' },
-    low: { color: 'green', icon: '🟢', label: 'Nice to Have' }
-  };
-
-  // Sort recommendations by priority
-  const prioritizedRecs = [...recommendations].sort((a, b) => {
-    const priorityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
-    return (priorityOrder[a.priority] || 3) - (priorityOrder[b.priority] || 3);
-  });
-
   return (
     <div className="bg-gradient-to-br from-gray-900 to-gray-800 p-6 rounded-xl border border-gray-700">
       <h3 className="text-xl font-bold mb-6 text-white">Your Development Roadmap</h3>
@@ -62,52 +48,30 @@ export default function RecommendationsPanel({
 
       {/* Prioritized Action Items */}
       <div className="mb-6">
-        <h4 className="text-lg font-bold text-white mb-4">🎯 Prioritized Action Items</h4>
+        <h4 className="text-lg font-bold text-white mb-4">🎯 Actionable Recommendations</h4>
         <div className="space-y-3">
-          {prioritizedRecs.length > 0 ? (
-            prioritizedRecs.map((rec, i) => {
-              // Handle various data formats
-              let title = "";
-              let description = "";
-              let timeframe = "";
+          {recommendations.length > 0 ? (
+            recommendations.map((rec, i) => {
+              // Handle string or object format
+              const recText = typeof rec === "string" ? rec : (rec?.recommendation || rec?.action || "");
               
-              if (typeof rec === "string") {
-                title = rec;
-              } else if (rec && typeof rec === "object") {
-                title = rec.title || rec.recommendation || rec.action || rec.step || JSON.stringify(rec).substring(0, 100);
-                description = rec.description || rec.reason || "";
-                timeframe = rec.timeframe || rec.duration || "";
-              }
-              
-              const priority = priorityLevels[rec.priority] || priorityLevels.low;
+              if (!recText) return null;
               
               return (
                 <div 
                   key={i} 
-                  className={`border-l-4 border-${priority.color}-500 bg-gray-700/50 rounded-lg p-4`}
+                  className="border-l-4 border-blue-500 bg-gray-700/50 rounded-lg p-4"
                 >
                   <div className="flex items-start gap-3">
-                    <span className="text-2xl mt-0.5">{priority.icon}</span>
-                    <div className="flex-1">
-                      <h5 className={`font-bold text-${priority.color}-300 mb-1`}>
-                        {title}
-                      </h5>
-                      {description && (
-                        <p className="text-sm text-gray-300 mb-2">{description}</p>
-                      )}
-                      {timeframe && (
-                        <p className="text-xs text-gray-400">
-                          ⏱️ Timeline: <strong>{timeframe}</strong>
-                        </p>
-                      )}
-                    </div>
+                    <span className="text-lg">💡</span>
+                    <p className="flex-1 text-gray-300">{recText}</p>
                   </div>
                 </div>
               );
             })
           ) : (
             <div className="bg-gray-700/50 rounded-lg p-4 text-gray-400 text-center">
-              <p>No specific recommendations at this time. Keep improving! 🚀</p>
+              <p>No specific recommendations available. Your resume looks good! 🚀</p>
             </div>
           )}
         </div>
@@ -119,18 +83,12 @@ export default function RecommendationsPanel({
           <h4 className="text-lg font-bold text-white mb-4">📋 Your Action Plan</h4>
           <div className="space-y-0">
             {nextSteps.map((step, i) => {
-              // Handle various data formats
-              let title = "";
-              let description = "";
-              let resources = "";
+              // Extract data from {step, action, reason} format
+              const stepNumber = step.step || step.order || (i + 1);
+              const actionText = step.action || step.title || step.recommendation || "";
+              const reasonText = step.reason || step.description || "";
               
-              if (typeof step === "string") {
-                title = step;
-              } else if (step && typeof step === "object") {
-                title = step.title || step.step || step.recommendation || step.action || JSON.stringify(step).substring(0, 100);
-                description = step.description || step.reason || "";
-                resources = step.resources || step.resource || "";
-              }
+              if (!actionText) return null;
               
               return (
                 <div 
@@ -139,21 +97,16 @@ export default function RecommendationsPanel({
                 >
                   <div className="flex flex-col items-center">
                     <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm">
-                      {i + 1}
+                      {stepNumber}
                     </div>
                     {i !== nextSteps.length - 1 && (
                       <div className="w-1 h-12 bg-blue-600 mt-2"></div>
                     )}
                   </div>
                   <div className="flex-1 pt-1">
-                    <h5 className="font-semibold text-white mb-1">{title}</h5>
-                    {description && (
-                      <p className="text-sm text-gray-400 mb-2">{description}</p>
-                    )}
-                    {resources && (
-                      <div className="text-xs text-blue-400">
-                        📚 Resources: <span className="text-gray-300">{resources}</span>
-                      </div>
+                    <h5 className="font-semibold text-white mb-1">{actionText}</h5>
+                    {reasonText && (
+                      <p className="text-sm text-gray-400">{reasonText}</p>
                     )}
                   </div>
                 </div>

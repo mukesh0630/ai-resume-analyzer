@@ -3,14 +3,14 @@
  * Shows each component's contribution to overall score
  */
 
-export default function ScoreBreakdownChart({ breakdown = {} }) {
+export default function ScoreBreakdownChart({ scoreBreakdown = {} }) {
   const components = [
-    { label: "Skills Match", value: breakdown.skills || 0, color: "bg-blue-500", weight: 40 },
-    { label: "Experience", value: breakdown.experience || 0, color: "bg-purple-500", weight: 20 },
-    { label: "Projects", value: breakdown.projects || 0, color: "bg-pink-500", weight: 15 },
-    { label: "Education", value: breakdown.education || 0, color: "bg-green-500", weight: 10 },
-    { label: "Keywords & Format", value: breakdown.keywords_formatting || 0, color: "bg-yellow-500", weight: 10 },
-    { label: "Certifications", value: breakdown.certifications || 0, color: "bg-orange-500", weight: 5 },
+    { label: "Skills Match", value: scoreBreakdown.skills || 0, color: "bg-blue-500", weight: 40 },
+    { label: "Experience", value: scoreBreakdown.experience || 0, color: "bg-purple-500", weight: 20 },
+    { label: "Projects", value: scoreBreakdown.projects || 0, color: "bg-pink-500", weight: 15 },
+    { label: "Education", value: scoreBreakdown.education || 0, color: "bg-green-500", weight: 10 },
+    { label: "Keywords & Format", value: scoreBreakdown.keywords_formatting || 0, color: "bg-yellow-500", weight: 10 },
+    { label: "Certifications", value: scoreBreakdown.certifications || 0, color: "bg-orange-500", weight: 5 },
   ];
 
   return (
