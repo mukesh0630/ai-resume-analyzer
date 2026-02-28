@@ -1,2 +1,12 @@
 backend/firebase/serviceAccountKey.json
 backend/.env
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Generated reports
+generated_reports/*.pdf
