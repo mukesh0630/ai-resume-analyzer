@@ -232,7 +232,13 @@ export default function ResumeUploader({ selectedHistory }) {
             weaknesses={missingSkills.slice(0, 5)}
           />
 
-          <AIChat resumeText={resumeText} jobDesc={jobDesc} missingSkills={missingSkills} atsScore={atsScore} />
+          <AIChat 
+            resumeText={resumeText} 
+            jobDesc={jobDesc} 
+            missingSkills={missingSkills} 
+            atsScore={atsScore}
+            analysisInsights={insights}
+          />
 
           <button 
             onClick={handleDownload} 
