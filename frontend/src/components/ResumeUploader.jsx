@@ -124,17 +124,8 @@ export default function ResumeUploader({ selectedHistory }) {
       setErrorMsg("");
       
       // Validate data before downloading
-      if (!atsScore && atsScore !== 0) {
+      if (atsScore === null || (typeof atsScore !== 'number' && !atsScore)) {
         throw new Error("No ATS score available. Please analyze a resume first.");
-      }
-
-      // Check if we have enough data
-      if (!roadmap || roadmap.length === 0) {
-        throw new Error("Roadmap data is missing. Please analyze a resume first.");
-      }
-
-      if (!feedback || feedback.length === 0) {
-        throw new Error("AI insights are missing. Please analyze a resume first.");
       }
 
       const downloadPayload = {

@@ -1,6 +1,4 @@
 import { useEffect, useState } from "react";
-import ATSScoreRing from "./ATSScoreRing";
-import ATSTrendChart from "./ATSTrendChart";
 import { auth } from "../firebase";
 import { fetchHistory } from "../api";
 
@@ -89,7 +87,12 @@ export default function DashboardHome() {
       <div className="grid md:grid-cols-3 gap-6">
 
         <StatBox title="ATS Compatibility">
-          <ATSScoreRing score={avgATS} />
+          <p className="text-4xl font-bold text-purple-400">
+            {avgATS}%
+          </p>
+          <p className="text-sm text-gray-400 mt-2">
+            Average ATS score
+          </p>
         </StatBox>
 
         <StatBox title="Skill Match">
@@ -112,10 +115,7 @@ export default function DashboardHome() {
 
       </div>
 
-      {/* ---------------- ANALYTICS ---------------- */}
-      {history.length > 1 && (
-        <ATSTrendChart history={history} />
-      )}
+      {/* Analytics removed - charts replaced with text-based stats */}
 
       {/* ---------------- WHY THIS APP ---------------- */}
       <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-8 border border-white/10">
@@ -127,7 +127,7 @@ export default function DashboardHome() {
           <li>ATS-friendly resume evaluation</li>
           <li>Skill gap detection with roadmap</li>
           <li>AI-generated resume suggestions</li>
-          <li>Visual analytics (charts & score rings)</li>
+          <li>Comprehensive analytics dashboards</li>
           <li>History tracking & improvement insights</li>
         </ul>
       </div>

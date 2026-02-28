@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from typing import List, Any
-from backend.app.services.firestore_db import db
+from backend.app.firebase_config import db
 from datetime import datetime
 
 try:

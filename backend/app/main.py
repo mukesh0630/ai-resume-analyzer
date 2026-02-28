@@ -47,26 +47,14 @@ from backend.app.firebase_config import db  # Optional import, not used directly
 # Routes
 # -----------------------------
 from backend.app.routes import (
-    ai_ats,
     resume,
     history,
-    ai,
-    ats,
-    skill_gap,
-    roadmap,
-    feedback,
     analyze,
 )
 
 
 app.include_router(resume.router)
-app.include_router(ats.router)
-app.include_router(skill_gap.router)
-app.include_router(roadmap.router)
-app.include_router(ai_ats.router)
-app.include_router(ai.router)
 app.include_router(history.router)
-app.include_router(feedback.router)
 app.include_router(analyze.router)
 
 # -----------------------------
