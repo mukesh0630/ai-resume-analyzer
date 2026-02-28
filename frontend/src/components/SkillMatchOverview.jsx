@@ -3,6 +3,8 @@
  * Shows percentage match and actionable skill lists
  */
 
+import { useEffect, useState } from "react";
+
 export default function SkillMatchOverview({ 
   matchedSkills = [], 
   missingSkills = [], 
@@ -10,15 +12,36 @@ export default function SkillMatchOverview({
 }) {
   const totalSkills = matchedSkills.length + missingSkills.length;
   const matchPercentage = totalSkills > 0 ? Math.round((matchedSkills.length / totalSkills) * 100) : 0;
+  
+  // Animated counter
+  const [animatedPercentage, setAnimatedPercentage] = useState(0);
+
+  useEffect(() => {
+    let start = 0;
+    const duration = 1500; // 1.5 seconds
+    const increment = matchPercentage / (duration / 16); // 60fps
+    
+    const timer = setInterval(() => {
+      start += increment;
+      if (start >= matchPercentage) {
+        setAnimatedPercentage(matchPercentage);
+        clearInterval(timer);
+      } else {
+        setAnimatedPercentage(Math.round(start));
+      }
+    }, 16);
+    
+    return () => clearInterval(timer);
+  }, [matchPercentage]);
 
   return (
     <div className="bg-gradient-to-br from-gray-900 to-gray-800 p-6 rounded-xl border border-gray-700">
       <h3 className="text-xl font-bold mb-6 text-white">Skill Match Analysis</h3>
 
-      {/* Match percentage - Large visual indicator */}
+      {/* Match percentage - Large visual indicator with animation */}
       <div className="grid md:grid-cols-2 gap-6 mb-6">
-        <div className="flex flex-col items-center justify-center bg-gray-700/50 rounded-lg p-6">
-          <div className="relative w-32 h-32">
+        <div className="flex flex-col items-center justify-center bg-gradient-to-br from-gray-700/70 to-gray-800/70 rounded-lg p-8 shadow-lg">
+          <div className="relative w-48 h-48">
             <svg className="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
               {/* Background circle */}
               <circle
@@ -26,32 +49,41 @@ export default function SkillMatchOverview({
                 cy="60"
                 r="50"
                 fill="none"
-                stroke="#374151"
-                strokeWidth="8"
+                stroke="#1f2937"
+                strokeWidth="10"
               />
-              {/* Progress circle */}
+              {/* Progress circle with animation */}
               <circle
                 cx="60"
                 cy="60"
                 r="50"
                 fill="none"
-                stroke={matchPercentage >= 80 ? "#10b981" : matchPercentage >= 60 ? "#3b82f6" : matchPercentage >= 40 ? "#f59e0b" : "#ef4444"}
-                strokeWidth="8"
-                strokeDasharray={`${(matchPercentage / 100) * 314} 314`}
+                stroke={animatedPercentage >= 80 ? "#10b981" : animatedPercentage >= 60 ? "#3b82f6" : animatedPercentage >= 40 ? "#f59e0b" : "#ef4444"}
+                strokeWidth="10"
+                strokeDasharray={`${(animatedPercentage / 100) * 314} 314`}
                 strokeLinecap="round"
-                className="transition-all duration-500"
+                className="transition-all duration-700 ease-out"
+                style={{
+                  filter: `drop-shadow(0 0 8px ${animatedPercentage >= 80 ? "#10b98180" : animatedPercentage >= 60 ? "#3b82f680" : animatedPercentage >= 40 ? "#f59e0b80" : "#ef444480"})`
+                }}
               />
             </svg>
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center">
-                <div className="text-4xl font-bold text-white">{matchPercentage}%</div>
-                <div className="text-xs text-gray-400">Match</div>
+                <div className="text-6xl font-black text-white">{animatedPercentage}%</div>
+                <div className="text-sm text-gray-400 font-semibold mt-1">ATS Match</div>
               </div>
             </div>
           </div>
           
-          <div className="mt-4 text-center text-sm text-gray-300">
-            <p className="font-semibold">{matchedSkills.length} of {totalSkills} skills matched</p>
+          <div className="mt-6 text-center">
+            <p className="text-lg font-bold text-white">{matchedSkills.length} of {totalSkills} skills matched</p>
+            <p className="text-sm text-gray-400 mt-1">
+              {animatedPercentage >= 80 && "🎉 Excellent alignment!"}
+              {animatedPercentage >= 60 && animatedPercentage < 80 && "✨ Strong candidate"}
+              {animatedPercentage >= 40 && animatedPercentage < 60 && "💪 Good foundation"}
+              {animatedPercentage < 40 && "📚 Room to grow"}
+            </p>
           </div>
         </div>
 

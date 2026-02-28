@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import ATSScoreRing from "./ATSScoreRing";
 import ScoreBreakdownChart from "./ScoreBreakdownChart";
 import SkillMatchOverview from "./SkillMatchOverview";
 import RecommendationsPanel from "./RecommendationsPanel";
@@ -211,25 +210,6 @@ export default function ResumeUploader({ selectedHistory }) {
 
       {atsScore !== null && (
         <>
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="bg-white/10 p-6 rounded-xl flex justify-center">
-              <ATSScoreRing score={Math.round(atsScore)} />
-            </div>
-
-            <div className="bg-white/10 p-6 rounded-xl">
-              <h3 className="font-semibold mb-2">Missing Skills</h3>
-              <ul className="text-sm text-gray-300 max-h-48 overflow-y-auto">
-                {missingSkills.length > 0 ? (
-                  missingSkills.map((s, i) => (
-                    <li key={i}>• {s}</li>
-                  ))
-                ) : (
-                  <li className="text-gray-500 italic">Perfect match - no missing skills!</li>
-                )}
-              </ul>
-            </div>
-          </div>
-
           {(matchedSkills.length > 0 || missingSkills.length > 0) && (
             <SkillMatchOverview 
               matchedSkills={matchedSkills}
